@@ -6,5 +6,5 @@ setup(name='pywdl',
       packages=find_packages(where='src'),
       install_requires=[
           "antlr4-python3-runtime==4.8",
-          "toil"
+          "toil"  # TODO: temporarily
       ])
