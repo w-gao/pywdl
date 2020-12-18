@@ -21,7 +21,7 @@ primitive_types = {
     'Float': WDLFloatType,
     'Boolean': WDLBooleanType,
     'File': WDLFileType,
-    'Dictionary': None,
+    'Directory': None,  # to be implemented.
 }
 
 
@@ -46,7 +46,7 @@ class AntlrToWorkflow(WdlParserVisitor):
 
     def visitVersion(self, ctx: WdlParser.VersionContext):
         assert str(ctx.RELEASE_VERSION()) in ('1.0', 'development'), \
-            f'Unknown version: {str(ctx.RELEASE_VERSION())}.'
+            f'Unsupported version: {str(ctx.RELEASE_VERSION())}.'
 
     def visitDocument_element(self, ctx: WdlParser.Document_elementContext):
         """
