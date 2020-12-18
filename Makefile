@@ -1,5 +1,7 @@
 ANTLR_VERSION = antlr-4.8-complete
-GENERATED_PATH = src/pywdl/antlr
+GENERATED_PATH = pywdl/antlr
+FLAGS = -jar $(ANTLR_VERSION).jar -Dlanguage=Python3
+GRAPH_PATH = graph
 
 all: generate clean-extra
 
@@ -9,8 +11,8 @@ antlr:
 		curl -O https://www.antlr.org/download/$(ANTLR_VERSION).jar; fi;
 
 generate: antlr
-	java -jar $(ANTLR_VERSION).jar -Dlanguage=Python3 $(GENERATED_PATH)/WdlLexer.g4
-	java -jar $(ANTLR_VERSION).jar -Dlanguage=Python3 -listener -visitor $(GENERATED_PATH)/WdlParser.g4
+	java $(FLAGS) $(GENERATED_PATH)/WdlLexer.g4
+	java $(FLAGS) -listener -visitor $(GENERATED_PATH)/WdlParser.g4
 
 clean-extra:
 	cd $(GENERATED_PATH) && find . -type f \( -name '*.interp' -or -name '*.tokens' \) -delete
