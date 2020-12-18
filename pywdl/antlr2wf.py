@@ -38,7 +38,7 @@ class AntlrToWorkflow(WdlParserVisitor):
 
     def visitDocument(self, ctx: WdlParser.DocumentContext):
         """
-        Top level tree. Contains `version` followed by any number of `document_element`.
+        Root of tree. Contains `version` followed by any number of `document_element`s.
         """
         self.visitVersion(ctx.version())
         for element in ctx.document_element():
@@ -50,7 +50,7 @@ class AntlrToWorkflow(WdlParserVisitor):
 
     def visitDocument_element(self, ctx: WdlParser.Document_elementContext):
         """
-        A child of 'import_doc', 'struct', 'workflow', or 'task'.
+        Contains one of the following: 'import_doc', 'struct', 'workflow', or 'task'.
         """
         # TODO: add support for imports.
         assert isinstance(ctx.children[0], (WdlParser.WorkflowContext,
@@ -64,7 +64,7 @@ class AntlrToWorkflow(WdlParserVisitor):
 
     def visitWorkflow(self, ctx: WdlParser.WorkflowContext):
         """
-        Contains an 'identifier' and an array of `workflow_element`.
+        Contains an 'identifier' and an array of `workflow_element`s.
         """
         identifier = ctx.Identifier().getText()
         self.workflows_dictionary.setdefault(identifier, OrderedDict())
@@ -84,6 +84,41 @@ class AntlrToWorkflow(WdlParserVisitor):
             else:
                 raise NotImplementedError
 
+    def visitWorkflow_input(self, ctx: WdlParser.Workflow_inputContext):
+        """
+        Contains an array of 'any_decls', which can be unbounded or bounded declarations.
+
+        Example:
+            input {
+              String in_str = "twenty"
+              Int in_int
+            }
+
+        Returns an array of tuples=(name, decl).
+        """
+        decls = []
+        for index in range(ctx.getChildCount() - 3):  # skip 'input', '{', and '}'
+            name, decl = self.visitAny_decls(ctx.any_decls(i=index))
+            decls.append((name, decl))
+        return decls
+
+    def visitWorkflow_output(self, ctx: WdlParser.Workflow_outputContext):
+        """
+        Contains an array of 'bound_decls' (unbound_decls not allowed).
+
+        Example:
+            output {
+              String out_str = read_string(stdout())
+            }
+
+        Returns an array of tuples=(name, decl).
+        """
+        decls = []
+        for index in range(ctx.getChildCount() - 3):  # skip 'output', '{', and '}'
+            name, decl = self.visitBound_decls(ctx.bound_decls(i=index))
+            decls.append((name, decl))
+        return decls
+
     def visitInner_workflow_element(self, ctx: WdlParser.Inner_workflow_elementContext):
         """
         """
@@ -101,42 +136,23 @@ class AntlrToWorkflow(WdlParserVisitor):
 
         pass
 
-    def visitWorkflow_input(self, ctx: WdlParser.Workflow_inputContext):
+    def visitCall(self, ctx: WdlParser.CallContext):
         """
-        Contains an array of 'any_decls', which can be an unbounded or bounded declaration.
 
-        Example:
-            input {
-              String in_str = "twenty"
-              Int in_int
-            }
         """
-        decls = []
-        for index in range(ctx.getChildCount() - 3):  # skip 'input', '{', and '}'
-            name, decl = self.visitAny_decls(ctx.any_decls(i=index))
-            decls.append([name, decl])
-        return decls
-
-    def visitWorkflow_output(self, ctx: WdlParser.Workflow_outputContext):
-        """
-        Contains an array of 'bound_decls' (unbound_decls not allowed).
-
-        Example:
-            output {
-              String out_str = read_string(stdout())
-            }
-        """
-        decls = []
-        for index in range(ctx.getChildCount() - 3):  # skip 'output', '{', and '}'
-            name, decl = self.visitBound_decls(ctx.bound_decls(i=index))
-            decls.append([name, decl])
-        return decls
+        return super().visitChildren(ctx)
 
     def visitScatter(self, ctx: WdlParser.ScatterContext):
         """
 
         """
         return super().visitChildren(ctx)
+
+    def visitConditional(self, ctx: WdlParser.ConditionalContext):
+        """
+
+        """
+        pass
 
     # Task section
 
@@ -146,11 +162,12 @@ class AntlrToWorkflow(WdlParserVisitor):
 
     #
 
-    # Shared section
+    # Shared
 
     def visitUnbound_decls(self, ctx: WdlParser.Unbound_declsContext):
         """
         Contains an unbounded input declaration. E.g.: `String in_str`.
+
         Returns a tuple=(`name`, dict={`name`, `type`, `value`}), where `value` is None.
         """
         name = ctx.Identifier().getText()
@@ -160,6 +177,7 @@ class AntlrToWorkflow(WdlParserVisitor):
     def visitBound_decls(self, ctx: WdlParser.Bound_declsContext):
         """
         Contains a bounded input declaration. E.g.: `String in_str = "some string"`.
+
         Returns a tuple=(`name`, dict={`name`, `type`, `value`}).
         """
         name = ctx.Identifier().getText()
@@ -213,3 +231,9 @@ class AntlrToWorkflow(WdlParserVisitor):
             return ctx.children[0].getText()
         else:
             raise RuntimeError(f'Primitive literal has unknown child: {type(ctx.children[0])}.')
+
+    def visitExpr(self, ctx: WdlParser.ExprContext):
+        """
+
+        """
+        return super().visitChildren(ctx)

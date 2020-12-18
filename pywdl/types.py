@@ -38,6 +38,8 @@ class WDLType:
         raise NotImplementedError
 
     def __eq__(self, other):
+        if isinstance(other, WDLType):
+            return self.name.__eq__(other.name)
         return self.name.__eq__(other)
 
     def __str__(self):
