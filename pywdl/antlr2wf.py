@@ -3,7 +3,7 @@ from collections import OrderedDict  # TODO: switch to dict.
 from pywdl.antlr.WdlParser import WdlParser
 from pywdl.antlr.WdlParserVisitor import WdlParserVisitor
 from antlr4.tree.Tree import TerminalNodeImpl
-from toil.wdl.wdl_types import (
+from pywdl.types import (
     WDLStringType,
     WDLIntType,
     WDLFloatType,
