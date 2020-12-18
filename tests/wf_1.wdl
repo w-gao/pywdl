@@ -14,6 +14,11 @@ workflow wf_1 {
   }
 	String rev_str = if in_str == "hi" then "bye" else in_str
 
+  if (in_bool) {
+    # conditionals
+  }
+
+
   call task_1 {input: in_str=in_str}
 
   Array[Int] scatters = [1, 2, 3, 4, 5]
