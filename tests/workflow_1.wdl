@@ -8,6 +8,7 @@ workflow wf_1 {
     String in_str = "hi"  # bounded
     String? in_str_opt    # optional
     Int in_int            # unbounded
+    Boolean in_bool = true
     Array[String] in_arr
     Pair[String, Int] in_pair
   }

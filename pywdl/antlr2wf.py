@@ -1,3 +1,5 @@
+from collections import OrderedDict  # TODO: switch to dict.
+
 from pywdl.antlr.WdlParser import WdlParser
 from pywdl.antlr.WdlParserVisitor import WdlParserVisitor
 from antlr4.tree.Tree import TerminalNodeImpl
@@ -52,13 +54,22 @@ class AntlrToWorkflow(WdlParserVisitor):
         """
         Contains an 'identifier' and an array of `workflow_element`.
         """
-        # TODO: store this to self.workflows_dictionary
-
         identifier = ctx.Identifier().getText()
-        print(f'Visiting workflow: {identifier}')
+        self.workflows_dictionary.setdefault(identifier, OrderedDict())
 
+        print(f'Visiting workflow: {identifier}')
         for element in ctx.workflow_element():
-            self.visit(element)
+            section = element.children[0]
+            if isinstance(section, WdlParser.Workflow_inputContext):
+                self.workflows_dictionary[identifier]['wf_declarations'] = self.visitWorkflow_input(section)
+            elif isinstance(section, WdlParser.Inner_workflow_elementContext):
+                # TODO
+                pass
+            elif isinstance(section, WdlParser.Workflow_outputContext):
+                # TODO
+                pass
+            else:
+                raise NotImplementedError
 
     def visitWorkflow_input(self, ctx: WdlParser.Workflow_inputContext):
         """
@@ -70,31 +81,43 @@ class AntlrToWorkflow(WdlParserVisitor):
               Int in_int
             }
         """
+        decls = []
         for index in range(ctx.getChildCount() - 3):  # skip 'input', '{', and '}'
             name, decl = self.visitAny_decls(ctx.any_decls(i=index))
-            self.workflows_dictionary.setdefault(name, dict())['wf_declarations'] = decl
+            decls.append([name, decl])
+        return decls
+
+    def visitWorkflow_output(self, ctx: WdlParser.Workflow_outputContext):
+        print('visitWorkflow_output')
 
     def visitUnbound_decls(self, ctx: WdlParser.Unbound_declsContext):
         """
         Contains an unbounded input declaration. E.g.: `String in_str`.
+        Returns a tuple=(`name`, dict={`name`, `type`, `value`}), where `value` is None.
         """
         name = ctx.Identifier().getText()
         type_ = self.visitWdl_type(ctx.wdl_type())
-        return name, dict({'name': name, 'type': type_, 'value': None})
+        return name, OrderedDict({'name': name, 'type': type_, 'value': None})
 
     def visitBound_decls(self, ctx: WdlParser.Bound_declsContext):
         """
         Contains a bounded input declaration. E.g.: `String in_str = "some string"`.
+        Returns a tuple=(`name`, dict={`name`, `type`, `value`}).
         """
         name = ctx.Identifier().getText()
         type_ = self.visitWdl_type(ctx.wdl_type())
         expr = super().visitChildren(ctx.expr())
-        # TODO: figure out expr_infix.
-        print('expr:', expr)
 
-        return name, dict({'name': name, 'type': type_, 'value': expr})
+        if isinstance(type_, WDLBooleanType):
+            assert expr in ('true', 'false'), 'Parsed boolean ({}) must be expressed as "true" or "false".'
+            expr = expr.capitalize()
+
+        return name, OrderedDict({'name': name, 'type': type_, 'value': expr})
 
     def visitWdl_type(self, ctx: WdlParser.Wdl_typeContext):
+        """
+        Returns a WDLType instance.
+        """
         type_: WdlParser.Type_baseContext = ctx.type_base().children[0]
         optional = ctx.OPTIONAL() is not None
 
@@ -112,15 +135,20 @@ class AntlrToWorkflow(WdlParserVisitor):
                 return WDLFileType(optional)
             else:
                 raise RuntimeError(f'Unsupported primitive type: {type_.getText()}')
-        # recursively parse compound types
+        # recursively visit compound types
         elif isinstance(type_, WdlParser.Array_typeContext):
-            return WDLArrayType(self.visitWdl_type(type_.wdl_type()), optional)
+            # Array[element]
+            return WDLArrayType(
+                element=self.visitWdl_type(type_.wdl_type()),
+                optional=optional)
         elif isinstance(type_, WdlParser.Pair_typeContext):
+            # Pair[left, right]
             return WDLPairType(
                 left=self.visitWdl_type(type_.wdl_type(0)),
                 right=self.visitWdl_type(type_.wdl_type(1)),
                 optional=optional)
         elif isinstance(type_, WdlParser.Map_typeContext):
+            # Map[left, right]
             return WDLMapType(
                 key=self.visitWdl_type(type_.wdl_type(0)),
                 value=self.visitWdl_type(type_.wdl_type(1)),
@@ -128,18 +156,20 @@ class AntlrToWorkflow(WdlParserVisitor):
         else:
             raise RuntimeError(f'Unsupported type: {type_.getText()}')
 
-    def visitString(self, ctx: WdlParser.StringContext):
+    def visitPrimitive_literal(self, ctx: WdlParser.Primitive_literalContext):
         """
-        Contains " (quotation mark), string_part, and " (quotation mark). Returns
-        the `string_part` as a Python string.
+        Returns the primitive literal as a string.
         """
-        return ctx.string_part().getText()
-
-    def visitNumber(self, ctx: WdlParser.NumberContext):
-        return 'number'
+        if isinstance(ctx.children[0], (TerminalNodeImpl,
+                                        WdlParser.StringContext,
+                                        WdlParser.NumberContext)):
+            return ctx.children[0].getText()
+        else:
+            raise NotImplementedError()
 
     def visitTask(self, ctx: WdlParser.TaskContext):
-        return super().visitChildren(ctx)
+        print('visitTask')
+        # return super().visitChildren(ctx)
 
     def visitScatter(self, ctx: WdlParser.ScatterContext):
         return super().visitChildren(ctx)
