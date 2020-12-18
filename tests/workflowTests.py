@@ -25,6 +25,12 @@ def test_wf_1():
     visitor = AntlrToWorkflow()
     visitor.visit(tree)
 
+    print('--- workflow dictionary ---')
+    print(visitor.workflows_dictionary)
+
+    print('--- tasks dictionary ---')
+    print(visitor.tasks_dictionary)
+
 
 if __name__ == '__main__':
     test_wf_1()
