@@ -12,7 +12,8 @@ workflow wf_1 {
     Array[String] in_arr
     Pair[String, Int] in_pair
   }
-	String rev_str = if in_str == "hi" then "bye" else in_str
+
+	String ternary_str = if in_int > 19 then "yes!" else "no :("
 
   if (in_bool) {
     # conditionals
