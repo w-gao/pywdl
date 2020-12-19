@@ -32,22 +32,22 @@ class AntlrToDict(WdlParserVisitor):
 
     def __init__(self, ):
         # holds workflow structure from WDL workflow objects
-        self.workflows_dictionary = dict()
+        self.workflows_dictionary = OrderedDict()
 
         # holds task skeletons from WDL task objects
-        self.tasks_dictionary = dict()
+        self.tasks_dictionary = OrderedDict()
 
         # unique iterator to add to cmd names
-        self.command_number = 0
+        self.command_number = -1
 
         # unique iterator to add to call names
-        self.call_number = 0
+        self.call_number = -1
 
         # unique iterator to add to scatter names
-        self.scatter_number = 0
+        self.scatter_number = -1
 
         # unique iterator to add to if names
-        self.if_number = 0
+        self.if_number = -1
 
     def visitDocument(self, ctx: WdlParser.DocumentContext):
         """
@@ -81,7 +81,7 @@ class AntlrToDict(WdlParserVisitor):
         """
         identifier = ctx.Identifier().getText()
         self.workflows_dictionary.setdefault(identifier, OrderedDict())
-        self.workflows_dictionary[identifier].setdefault('wf_declarations', {})
+        self.workflows_dictionary[identifier].setdefault('wf_declarations', OrderedDict())
         print(f'Visiting workflow: {identifier}')
 
         for element in ctx.workflow_element():
@@ -143,10 +143,10 @@ class AntlrToDict(WdlParserVisitor):
             return 'wf_declarations', [self.visitBound_decls(element)]
         # call
         elif isinstance(element, WdlParser.CallContext):
-            pass
+            return self.visitCall(element)
         # scatter
         elif isinstance(element, WdlParser.ScatterContext):
-            pass
+            return self.visitScatter(element)
         # conditional
         elif isinstance(element, WdlParser.ConditionalContext):
             pass
@@ -155,30 +155,45 @@ class AntlrToDict(WdlParserVisitor):
 
     def visitCall(self, ctx: WdlParser.CallContext):
         """
-        Contains `call_name`, `call_alias`, `call_afters`, and `call_body`.
+        Pattern: CALL call_name call_alias? (call_afters)*  call_body?
+        Example WDL syntax: call task_1 {input: arr=arr}
 
-        Example: call task_1 {input: arr=arr}
+        Returns a tuple=(call_id, dict={task, alias, io}).
         """
-        # FIXME: `call_afters` is added in the development version so it is not supported by Toil.
 
-        # return this:
-        # ('call0', {
-        #   'task': 'task_1',
-        #   'alias': 'task_1',
-        #   'io': OrderedDict([
-        #     ('in_str', 'in_str')
-        #   ])
-        # })
+        name = '.'.join(identifier.getText() for identifier in ctx.call_name().Identifier())
+        alias = ctx.call_alias().Identifier().getText() if ctx.call_alias() else name
+        afters = None  # FIXME: `call_afters` is added in the development version so it is not supported by Toil.
+        body = OrderedDict({input_.Identifier().getText(): self.visitExpr(input_.expr())
+                            for input_ in ctx.call_body().call_inputs().call_input()}) if ctx.call_body() else None
 
-        # TODO
-        # return self.visitChildren(ctx)
+        self.call_number += 1
+        return f'call{self.call_number}', {
+            'task': name,
+            'alias': alias,
+            'io': body
+        }
 
     def visitScatter(self, ctx: WdlParser.ScatterContext):
         """
+        Pattern: SCATTER LPAREN Identifier In expr RPAREN LBRACE inner_workflow_element* RBRACE
+        Example WDL syntax: scatter ( i in items) { ... }
 
+        Returns a tuple=(scatter_id, dict={item, collection, body})
         """
-        # TODO
-        # return self.visitChildren(ctx)
+        item = ctx.Identifier().getText()
+        expr = self.visitExpr(ctx.expr())
+        body = OrderedDict()
+        for element in ctx.inner_workflow_element():
+            name, contents = self.visitInner_workflow_element(element)
+            body[name] = contents
+
+        self.scatter_number += 1
+        return f'scatter{self.scatter_number}', {
+            'item': item,
+            'collection': expr,
+            'body': body
+        }
 
     def visitConditional(self, ctx: WdlParser.ConditionalContext):
         """

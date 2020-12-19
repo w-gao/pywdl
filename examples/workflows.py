@@ -1,5 +1,5 @@
 
-example_wf_dict = {
+wf_1_wf_dict = {
     'wf_1': {
         'wf_declarations': {
             'in_str': {
@@ -17,11 +17,11 @@ example_wf_dict = {
                 'type': 'Int',
                 'value': None
             },
-            'in_bool':
-                {'name': 'in_bool',
-                 'type': 'Boolean',
-                 'value': 'True'
-                 },
+            'in_bool': {
+                'name': 'in_bool',
+                'type': 'Boolean',
+                'value': 'True'
+            },
             'in_arr': {
                 'name': 'in_arr',
                 'type': 'Array[String]',
@@ -43,14 +43,37 @@ example_wf_dict = {
                 'value': '[1, 2, 3, 4, 5]'
             }
         },
-        'UNIMPLEMENTED': {},
-        'wf_outputs':
-            [
-                ('wf_out', {
+        'UNIMPLEMENTED': {
+        },
+        'call0': {
+            'task': 'task_1',
+            'alias': 'task_1',
+            'io': {
+                'in_str': 'in_str'
+            }
+        },
+        'scatter0': {
+            'item': 'i',
+            'collection': 'scatters',
+            'body': {
+                'call1': {
+                    'task': 'task_2',
+                    'alias': 'bar',
+                    'io': {
+                        'in_int': 'i'
+                    }
+                }
+            }
+        },
+        'wf_outputs': [
+            (
+                'wf_out',
+                {
                     'name': 'wf_out',
                     'type': 'Array[String]',
                     'value': None
-                })
-            ]
+                }
+            )
+        ]
     }
 }
