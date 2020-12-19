@@ -265,9 +265,91 @@ class WdlTransformer(WdlParserVisitor):
         rhs = self.visitInfix2(ctx.expr_infix2())
         return f'{lhs} and {rhs}'
 
+    # expr_infix2
+    def visitEqeq(self, ctx: WdlParser.EqeqContext):
+        """
+        Equality (==) expression.
+        """
+        pass
+
+    # expr_infix2
+    def visitNeq(self, ctx: WdlParser.NeqContext):
+        """
+        Inequality (!=) expression.
+        """
+        pass
+
+    # expr_infix2
+    def visitLte(self, ctx: WdlParser.LteContext):
+        """
+        Less than or equal to (<=) expression.
+        """
+        pass
+
+    # expr_infix2
+    def visitGte(self, ctx: WdlParser.GteContext):
+        """
+        Greater or equal to (>=) expression.
+        """
+        pass
+
+    # expr_infix2
+    def visitLt(self, ctx: WdlParser.LtContext):
+        """
+        Less than (<) expression.
+        """
+        pass
+
+    # expr_infix2
+    def visitGt(self, ctx: WdlParser.GtContext):
+        """
+        Greater than (>) expression.
+        """
+        pass
+
+    # expr_infix3
+    def visitAdd(self, ctx: WdlParser.AddContext):
+        """
+        Addition (+) expression.
+        """
+        pass
+
+    # expr_infix3
+    def visitSub(self, ctx: WdlParser.SubContext):
+        """
+        Subtraction (-) expression.
+        """
+        pass
+
+    # expr_infix4
+    def visitMul(self, ctx: WdlParser.MulContext):
+        """
+        Multiply (*) expression.
+        """
+        pass
+
+    # expr_infix4
+    def visitDivide(self, ctx: WdlParser.DivideContext):
+        """
+        Divide (/) expression.
+        """
+        pass
+
+    # expr_infix4
+    def visitMod(self, ctx: WdlParser.ModContext):
+        """
+        Modulo (%) expression.
+        """
+        pass
+
     # expr_core
     # see: https://github.com/w-gao/wdl/blob/main/versions/development/parsers/antlr4/WdlParser.g4#L121
 
+    def visitApply(self, ctx: WdlParser.ApplyContext):
+        # TODO
+        pass
+
+    # expr_core
     def visitArray_literal(self, ctx: WdlParser.Array_literalContext):
         """
         Pattern: LBRACK (expr (COMMA expr)*)* RBRACK
@@ -299,9 +381,15 @@ class WdlTransformer(WdlParserVisitor):
     # expr_core
     def visitIfthenelse(self, ctx: WdlParser.IfthenelseContext):
         """
+        Ternary expression.
+
         Pattern: IF expr THEN expr ELSE expr
         """
-        return True
+        if_ = self.visitExpr(ctx.expr(0))
+        condition = self.visitExpr(ctx.expr(1))
+        else_ = self.visitExpr(ctx.expr(2))
+
+        return f'({condition} if {if_} else {else_})'
 
     # expr_core
     def visitExpression_group(self, ctx: WdlParser.Expression_groupContext):
@@ -309,3 +397,5 @@ class WdlTransformer(WdlParserVisitor):
         Pattern: LPAREN expr RPAREN
         """
         return f'({self.visitExpr(ctx.expr())})'
+
+    # TODO

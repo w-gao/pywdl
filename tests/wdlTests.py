@@ -199,28 +199,27 @@ class ExprTests(WdlTests):
         expected_output = "[(1, 'I'), (2, 'II'), (3, 'III'), (4, 'IV')]"
         self.assertEqual(self.get_wf_value(wf, 'wf_expr_pair_integration', 'arr'), expected_output)
 
-    def test_expr_ifelse(self):
+    def test_expr_ternary(self):
         """
-        Test If-then-else expression.
+        Test ternary (If then else) expression.
         """
-        wf_expr_ifelse = heredoc("""
+        wf_expr_ternary = heredoc("""
             version development
 
-            workflow wf_expr_ifelse {
+            workflow wf_expr_ternary {
               input {
-                String time = if morning then "morning" else "afternoon"
-                # if-then-else with + operator
-                String greeting = "good " + if morning then "morning" else "afternoon"
+                Boolean morning
               }
-
-              runtime {
-                memory: if array_length > 100 then "16GB" else "8GB"
-              }
+              
+              String time = if morning then "morning" else "afternoon"
+              # ternary with + operator
+              String greeting = "good " + if morning then "morning" else "afternoon"
             }
         """)
 
-        wf, _ = parse(InputStream(wf_expr_ifelse))
-        # self.assertEqual(self.get_wf_value(wf, 'wf_expr_ifelse', 'time'), '"morning" if morning else "afternoon"')
+        wf, _ = parse(InputStream(wf_expr_ternary))
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_ternary', 'time'), '("morning" if morning else "afternoon")')
+        # self.assertEqual(self.get_wf_value(wf, 'wf_expr_ternary', 'greeting'), '')
 
 
 class StressTests(WdlTests):

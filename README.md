@@ -4,12 +4,12 @@
 
 Antlr4 to Python compilation string Transforms
 
-- [ ] Types
+- Types
   * [X] Primitives (String, Int, Float, Boolean, File)
     - [ ] Directory
   * [X] Compound (Array, Pair, Map)
   * [ ] Struct **(!!)**
-- [ ] Expression
+- Expression
   * [X] LOR, LAND
   * [ ] ==, !==, <=, >=, <, >
   * [ ] +, -
@@ -20,7 +20,7 @@ Antlr4 to Python compilation string Transforms
   * [X] pair_literal
   * [ ] map_literal
   * [ ] struct_literal
-  * [ ] ifthenelse
+  * [X] ifthenelse
   * [X] expression_group
   * [ ] get_name
   * [ ] negate
@@ -34,7 +34,7 @@ Antlr4 to Python compilation string Transforms
   * [X] input
   * [X] call
   * [X] scatter
-  * [X] conditional
+  * [ ] conditional
   * [X] output
 - Task
   * [ ] input
