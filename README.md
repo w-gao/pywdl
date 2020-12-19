@@ -1,5 +1,48 @@
 # pywdl
 
+## Road map
+
+Antlr4 to Python compilation string Transforms
+
+- [ ] Types
+  * [X] Primitives (String, Int, Float, Boolean, File)
+    - [ ] Directory
+  * [X] Compound (Array, Pair, Map)
+  * [ ] Struct **(!!)**
+- [ ] Expression
+  * [X] LOR, LAND
+  * [ ] ==, !==, <=, >=, <, >
+  * [ ] +, -
+  * [ ] *, /, %
+  * [ ] <=, <, =, >, >=
+  * [ ] apply
+  * [X] array_literal
+  * [X] pair_literal
+  * [X] map_literal
+  * [ ] struct_literal
+  * [ ] ifthenelse
+  * [X] expression_group
+  * [ ] get_name
+  * [ ] negate
+  * [ ] unirarysigned
+  * [ ] primitives
+  * [ ] left_name
+- Document
+  * [ ] import
+  * [ ] meta
+- Workflow
+  * [X] input
+  * [X] call
+  * [X] scatter
+  * [X] conditional
+  * [X] output
+- Task
+  * [ ] input
+  * [ ] runtime
+  * [ ] command
+  * [ ] output
+
+Antlr4 to Python objects Transforms?
 
 
 ## Credits
