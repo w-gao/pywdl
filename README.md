@@ -18,7 +18,7 @@ Antlr4 to Python compilation string Transforms
   * [ ] apply
   * [X] array_literal
   * [X] pair_literal
-  * [X] map_literal
+  * [ ] map_literal
   * [ ] struct_literal
   * [ ] ifthenelse
   * [X] expression_group

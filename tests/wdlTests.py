@@ -1,11 +1,11 @@
 import textwrap
 import unittest
 
-from antlr4 import InputStream
+from antlr4 import InputStream, FileStream
 
 from pywdl.antlr.WdlParser import WdlParser
 from pywdl.antlr.WdlLexer import WdlLexer, CommonTokenStream
-from pywdl.antlr2dict import AntlrToDict
+from pywdl.transforms import WdlTransformer
 from pywdl.types import WDLStringType
 
 
@@ -20,7 +20,7 @@ def parse(stream):
     parser = WdlParser(input=stream)
     tree = parser.document()
 
-    visitor = AntlrToDict()
+    visitor = WdlTransformer()
     visitor.visit(tree)
 
     return visitor.workflows_dictionary, visitor.tasks_dictionary
@@ -51,15 +51,14 @@ class WorkflowTests(WdlTests):
         wf, _ = parse(InputStream(wf_input_1))
 
         expected_wf = {'wf_input_1': {
-            'wf_declarations': [
-                ('in_str', {
+            'wf_declarations': {
+                'in_str': {
                     'name': 'in_str',
                     'type': WDLStringType(),
                     'value': '"Hello"'
-                })
-            ]
+                }
+            }
         }}
-
         self.assertEqual(wf, expected_wf)
 
     def test_wf_output(self):
@@ -79,16 +78,36 @@ class WorkflowTests(WdlTests):
         wf, _ = parse(InputStream(wf_input_1))
 
         expected_wf = {'wf_output_1': {
-            'wf_outputs': [
-                ('in_str', {
+            'wf_outputs': {
+                'in_str': {
                     'name': 'in_str',
                     'type': WDLStringType(),
                     'value': '"Hello"'
-                })
-            ]
+                }
+            }
         }}
 
         self.assertEqual(wf, expected_wf)
+
+    def test_wf_declaration(self):
+        """
+        Test the workflow non-input declaration section.
+        """
+        wf_decl_1 = heredoc("""
+            version development
+
+            workflow wf_decl_1 {
+                input {
+                  String in_str = "Hello"
+                }
+                Int random_int = 19
+            }
+        """)
+
+        wf, _ = parse(InputStream(wf_decl_1))
+
+        # check if both declarations are present.
+        self.assertEqual(len(wf['wf_decl_1']['wf_declarations']), 2)
 
 
 class ExprTests(WdlTests):
@@ -96,8 +115,8 @@ class ExprTests(WdlTests):
     Unit tests related to WDL expressions.
     """
     @staticmethod
-    def get_wf_value(wf, wf_name, index: int):
-        return wf.get(wf_name).get('wf_declarations')[index][1].get('value')
+    def get_wf_value(wf, wf_name, key):
+        return wf.get(wf_name).get('wf_declarations').get(key).get('value')
 
     def test_expr_infix_0(self):
         """
@@ -123,15 +142,18 @@ class ExprTests(WdlTests):
         """)
 
         wf, _ = parse(InputStream(wf_expr_infix_1))
-        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 3), 'n0 or n10')  # bool_or
-        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 4), 'n0 and n10')  # bool_and
-        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 5), 'n0 or n10 and n5')  # bool_or_and_1
-        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 6), '(n0 or n10) and n5')  # bool_or_and_2
-        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 7), 'n0 and n10 or n5')  # bool_and_or_2
-        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 8), '(n0 and n10) or n5')  # bool_and_or_1
-        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 9), 'n0 and (n10 or n5)')  # bool_and_or_3
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 'bool_or'), 'n0 or n10')
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 'bool_and'), 'n0 and n10')
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 'bool_or_and_1'), 'n0 or n10 and n5')
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 'bool_or_and_2'), '(n0 or n10) and n5')
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 'bool_and_or_1'), 'n0 and n10 or n5')
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 'bool_and_or_2'), '(n0 and n10) or n5')
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 'bool_and_or_3'), 'n0 and (n10 or n5)')
 
     def test_expr_array(self):
+        """
+        Test Array literal expression.
+        """
         wf_expr_array = heredoc("""
             version development
 
@@ -143,9 +165,12 @@ class ExprTests(WdlTests):
         """)
 
         wf, _ = parse(InputStream(wf_expr_array))
-        self.assertEqual(self.get_wf_value(wf, 'wf_expr_array', 0), '[1, 2, 3, 4, 5]')
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_array', 'arr'), '[1, 2, 3, 4, 5]')
 
     def test_expr_pair(self):
+        """
+        Test Pair literal expression.
+        """
         wf_expr_pair = heredoc("""
             version development
 
@@ -157,7 +182,7 @@ class ExprTests(WdlTests):
         """)
 
         wf, _ = parse(InputStream(wf_expr_pair))
-        self.assertEqual(self.get_wf_value(wf, 'wf_expr_pair', 0), "('twenty', 20)")
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_pair', 'in_pair'), "('twenty', 20)")
 
         wf_expr_pair_integration = heredoc("""
             version development
@@ -172,7 +197,42 @@ class ExprTests(WdlTests):
         wf, _ = parse(InputStream(wf_expr_pair_integration))
 
         expected_output = "[(1, 'I'), (2, 'II'), (3, 'III'), (4, 'IV')]"
-        self.assertEqual(self.get_wf_value(wf, 'wf_expr_pair_integration', 0), expected_output)
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_pair_integration', 'arr'), expected_output)
+
+    def test_expr_ifelse(self):
+        """
+        Test If-then-else expression.
+        """
+        wf_expr_ifelse = heredoc("""
+            version development
+
+            workflow wf_expr_ifelse {
+              input {
+                String time = if morning then "morning" else "afternoon"
+                # if-then-else with + operator
+                String greeting = "good " + if morning then "morning" else "afternoon"
+              }
+
+              runtime {
+                memory: if array_length > 100 then "16GB" else "8GB"
+              }
+            }
+        """)
+
+        wf, _ = parse(InputStream(wf_expr_ifelse))
+        # self.assertEqual(self.get_wf_value(wf, 'wf_expr_ifelse', 'time'), '"morning" if morning else "afternoon"')
+
+
+class StressTests(WdlTests):
+    """
+    """
+
+    def test_stress_1(self):
+        import time
+        start = time.time()
+        wf, _ = parse(FileStream('stress_test.wdl', 'utf-8'))
+        end = time.time() - start
+        self.assertLessEqual(end, 2, f'Too long to run: ({end}s).')
 
 
 if __name__ == '__main__':
