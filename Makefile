@@ -1,9 +1,8 @@
 ANTLR_VERSION = antlr-4.8-complete
 GENERATED_PATH = pywdl/antlr
 FLAGS = -jar $(ANTLR_VERSION).jar -Dlanguage=Python3
-GRAPH_PATH = graph
 
-all: generate clean-extra
+all: generate clean-extras
 
 # Download antlr4 locally
 antlr:
@@ -14,9 +13,9 @@ generate: antlr
 	java $(FLAGS) $(GENERATED_PATH)/WdlLexer.g4
 	java $(FLAGS) -listener -visitor $(GENERATED_PATH)/WdlParser.g4
 
-clean-extra:
+clean-extras:
 	cd $(GENERATED_PATH) && find . -type f \( -name '*.interp' -or -name '*.tokens' \) -delete
 
-clean: clean-extra
+clean:
 	rm $(ANTLR_VERSION).jar
-	# also rm generated files
+	cd $(GENERATED_PATH) && find . -type f -not \( -name '.gitignore' -or -name '__init__.py' -or -name '*.g4' \) -delete
