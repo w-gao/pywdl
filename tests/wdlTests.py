@@ -5,7 +5,7 @@ from antlr4 import InputStream
 
 from pywdl.antlr.WdlParser import WdlParser
 from pywdl.antlr.WdlLexer import WdlLexer, CommonTokenStream
-from pywdl.antlr2wf import AntlrToWorkflow
+from pywdl.antlr2dict import AntlrToDict
 from pywdl.types import WDLStringType
 
 
@@ -20,7 +20,7 @@ def parse(stream):
     parser = WdlParser(input=stream)
     tree = parser.document()
 
-    visitor = AntlrToWorkflow()
+    visitor = AntlrToDict()
     visitor.visit(tree)
 
     return visitor.workflows_dictionary, visitor.tasks_dictionary
