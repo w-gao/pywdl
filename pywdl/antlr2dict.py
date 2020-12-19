@@ -37,6 +37,18 @@ class AntlrToDict(WdlParserVisitor):
         # holds task skeletons from WDL task objects
         self.tasks_dictionary = dict()
 
+        # unique iterator to add to cmd names
+        self.command_number = 0
+
+        # unique iterator to add to call names
+        self.call_number = 0
+
+        # unique iterator to add to scatter names
+        self.scatter_number = 0
+
+        # unique iterator to add to if names
+        self.if_number = 0
+
     def visitDocument(self, ctx: WdlParser.DocumentContext):
         """
         Root of tree. Contains `version` followed by any number of `document_element`s.
@@ -69,21 +81,28 @@ class AntlrToDict(WdlParserVisitor):
         """
         identifier = ctx.Identifier().getText()
         self.workflows_dictionary.setdefault(identifier, OrderedDict())
-
+        self.workflows_dictionary[identifier].setdefault('wf_declarations', {})
         print(f'Visiting workflow: {identifier}')
+
         for element in ctx.workflow_element():
             section = element.children[0]
+
+            # inputs
             if isinstance(section, WdlParser.Workflow_inputContext):
-                self.workflows_dictionary[identifier]['wf_declarations'] = self.visitWorkflow_input(section)
+                self.workflows_dictionary[identifier]['wf_declarations'].update(self.visitWorkflow_input(section))
+
+            # non-input declarations, scatters, calls, and conditionals
             elif isinstance(section, WdlParser.Inner_workflow_elementContext):
-                # TODO
-                pass
+                wf_key, contents = self.visitInner_workflow_element(section)
+                self.workflows_dictionary[identifier].setdefault(wf_key, {}).update(contents)
+
+            # outputs
             elif isinstance(section, WdlParser.Workflow_outputContext):
-                # FIXME: Seems like this portion is not supported in Toil?
                 self.workflows_dictionary[identifier]['wf_outputs'] = self.visitWorkflow_output(section)
-                pass
+
+            # O.o
             else:
-                raise NotImplementedError
+                raise RuntimeError(f'Unsupported workflow element in visitWorkflow(): {type(section)}')
 
     def visitWorkflow_input(self, ctx: WdlParser.Workflow_inputContext):
         """
@@ -97,11 +116,7 @@ class AntlrToDict(WdlParserVisitor):
 
         Returns an array of tuples=(name, decl).
         """
-        decls = []
-        for index in range(ctx.getChildCount() - 3):  # skip 'input', '{', and '}'
-            name, decl = self.visitAny_decls(ctx.any_decls(i=index))
-            decls.append((name, decl))
-        return decls
+        return [self.visitAny_decls(decl) for decl in ctx.any_decls()]
 
     def visitWorkflow_output(self, ctx: WdlParser.Workflow_outputContext):
         """
@@ -114,46 +129,63 @@ class AntlrToDict(WdlParserVisitor):
 
         Returns an array of tuples=(name, decl).
         """
-        decls = []
-        for index in range(ctx.getChildCount() - 3):  # skip 'output', '{', and '}'
-            name, decl = self.visitBound_decls(ctx.bound_decls(i=index))
-            decls.append((name, decl))
-        return decls
+        return [self.visitBound_decls(decl) for decl in ctx.bound_decls()]
 
     def visitInner_workflow_element(self, ctx: WdlParser.Inner_workflow_elementContext):
         """
+        Returns a tuple=(wf_key, contents)
         """
+        element = ctx.children[0]
+
         # bound_decls (e.g.: declarations declared outside of input section)
-        # TODO
-
+        if isinstance(element, WdlParser.Bound_declsContext):
+            # append this to `wf_declarations` for Toil.
+            return 'wf_declarations', [self.visitBound_decls(element)]
         # call
-        # TODO
-
+        elif isinstance(element, WdlParser.CallContext):
+            pass
         # scatter
-        # TODO
-
+        elif isinstance(element, WdlParser.ScatterContext):
+            pass
         # conditional
-        # TODO
+        elif isinstance(element, WdlParser.ConditionalContext):
+            pass
 
-        pass
+        return 'UNIMPLEMENTED', {}
 
     def visitCall(self, ctx: WdlParser.CallContext):
         """
+        Contains `call_name`, `call_alias`, `call_afters`, and `call_body`.
 
+        Example: call task_1 {input: arr=arr}
         """
-        return super().visitChildren(ctx)
+        # FIXME: `call_afters` is added in the development version so it is not supported by Toil.
+
+        # return this:
+        # ('call0', {
+        #   'task': 'task_1',
+        #   'alias': 'task_1',
+        #   'io': OrderedDict([
+        #     ('in_str', 'in_str')
+        #   ])
+        # })
+
+        # TODO
+        # return self.visitChildren(ctx)
 
     def visitScatter(self, ctx: WdlParser.ScatterContext):
         """
 
         """
-        return super().visitChildren(ctx)
+        # TODO
+        # return self.visitChildren(ctx)
 
     def visitConditional(self, ctx: WdlParser.ConditionalContext):
         """
 
         """
-        pass
+        # TODO
+        # return self.visitChildren(ctx)
 
     # Task section
 
