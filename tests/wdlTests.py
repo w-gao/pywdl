@@ -1,8 +1,10 @@
-import unittest
 import textwrap
-from antlr4 import InputStream, CommonTokenStream, FileStream
-from pywdl.antlr.WdlLexer import WdlLexer
+import unittest
+
+from antlr4 import InputStream
+
 from pywdl.antlr.WdlParser import WdlParser
+from pywdl.antlr.WdlLexer import WdlLexer, CommonTokenStream
 from pywdl.antlr2wf import AntlrToWorkflow
 from pywdl.types import WDLStringType
 
@@ -24,18 +26,14 @@ def parse(stream):
     return visitor.workflows_dictionary, visitor.tasks_dictionary
 
 
-def test_wf_1():
-    wf, tasks = parse(FileStream('./wf_1.wdl', 'utf-8'))
-
-    print('--- workflow dictionary ---')
-    print(wf)
-
-    print('--- tasks dictionary ---')
-    print(tasks)
+class WdlTests(unittest.TestCase):
+    pass
 
 
-class WorkflowTests(unittest.TestCase):
-
+class WorkflowTests(WdlTests):
+    """
+    Unit tests related to the workflow section.
+    """
     @unittest.skip
     def test_wf_input(self):
         """
@@ -43,7 +41,7 @@ class WorkflowTests(unittest.TestCase):
         """
         wf_input_1 = heredoc("""
             version development
-            
+
             workflow wf_input_1 {
                 input {
                   String in_str = "Hello"
@@ -51,7 +49,7 @@ class WorkflowTests(unittest.TestCase):
             }
         """)
 
-        wf, tasks = parse(InputStream(wf_input_1))
+        wf, _ = parse(InputStream(wf_input_1))
 
         expected_wf = {'wf_input_1': {
             'wf_declarations': [
@@ -64,7 +62,6 @@ class WorkflowTests(unittest.TestCase):
         }}
 
         self.assertEqual(wf, expected_wf)
-        self.assertEqual(tasks, {})
 
     @unittest.skip
     def test_wf_output(self):
@@ -73,7 +70,7 @@ class WorkflowTests(unittest.TestCase):
         """
         wf_input_1 = heredoc("""
             version development
-            
+
             workflow wf_output_1 {
                 output {
                   String in_str = "Hello"
@@ -81,7 +78,7 @@ class WorkflowTests(unittest.TestCase):
             }
         """)
 
-        wf, tasks = parse(InputStream(wf_input_1))
+        wf, _ = parse(InputStream(wf_input_1))
 
         expected_wf = {'wf_output_1': {
             'wf_outputs': [
@@ -94,13 +91,24 @@ class WorkflowTests(unittest.TestCase):
         }}
 
         self.assertEqual(wf, expected_wf)
-        self.assertEqual(tasks, {})
 
-    def test_expr_infix(self):
+
+class ExprTests(WdlTests):
+    """
+    Unit tests related to WDL expressions.
+    """
+    @staticmethod
+    def get_wf_value(wf, wf_name, index: int):
+        return wf.get(wf_name).get('wf_declarations')[index][1].get('value')
+
+    def test_expr_infix_0(self):
+        """
+        Test expr_infix0, expr_infix1, and expression_group (logical OR, logical AND, and group).
+        """
         wf_expr_infix_1 = heredoc("""
             version development
 
-            workflow wf_expr_infix_1 {
+            workflow wf_expr_infix_0 {
               input {
                   Int n0 = 0
                   Int n5 = 5
@@ -112,23 +120,29 @@ class WorkflowTests(unittest.TestCase):
                   Boolean bool_and_or_1 = n0 && n10 || n5
                   Boolean bool_and_or_2 = (n0 && n10) || n5  # no effect
                   Boolean bool_and_or_3 = n0 && (n10 || n5)
-
-                  # Array[Int] arr = [1, 2, 3]
-              }            
+              }
             }
         """)
 
-        wf, tasks = parse(InputStream(wf_expr_infix_1))
-        print(wf.get('wf_expr_infix_1').get('wf_declarations')[3][1]['value'])  # bool_or
-        print(wf.get('wf_expr_infix_1').get('wf_declarations')[4][1]['value'])  # bool_and
-        print(wf.get('wf_expr_infix_1').get('wf_declarations')[5][1]['value'])  # bool_or_and_1
-        print(wf.get('wf_expr_infix_1').get('wf_declarations')[6][1]['value'])  # bool_or_and_2
-        print(wf.get('wf_expr_infix_1').get('wf_declarations')[7][1]['value'])  #
-        print(wf.get('wf_expr_infix_1').get('wf_declarations')[8][1]['value'])  #
-        print(wf.get('wf_expr_infix_1').get('wf_declarations')[9][1]['value'])  #
-        # print(wf.get('wf_expr_infix_1').get('wf_declarations')[10][1]['value'])  # arr
+        wf, _ = parse(InputStream(wf_expr_infix_1))
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 3), 'n0 or n10')  # bool_or
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 4), 'n0 and n10')  # bool_and
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 5), 'n0 or n10 and n5')  # bool_or_and_1
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 6), '(n0 or n10) and n5')  # bool_or_and_2
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 7), 'n0 and n10 or n5')  # bool_and_or_2
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 8), '(n0 and n10) or n5')  # bool_and_or_1
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 9), 'n0 and (n10 or n5)')  # bool_and_or_3
 
+    def test_expr_array(self):
+        wf_expr_array = heredoc("""
+            version development
 
-if __name__ == '__main__':
-    unittest.main()
-    # test_wf_1()
+            workflow wf_expr_array {
+              input {
+                Array[Int] arr = [1, 2, 3, 4, 5]
+              }
+            }
+        """)
+
+        wf, _ = parse(InputStream(wf_expr_array))
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_array', 0), '[1, 2, 3, 4, 5]')

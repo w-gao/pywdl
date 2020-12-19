@@ -58,7 +58,7 @@ class AntlrToWorkflow(WdlParserVisitor):
                                             WdlParser.ScatterContext)), \
             'Import is not supported.'
 
-        return self.visit(ctx.children[0])
+        return self.visitChildren(ctx)
 
     # Workflow section
 
@@ -184,9 +184,9 @@ class AntlrToWorkflow(WdlParserVisitor):
         type_ = self.visitWdl_type(ctx.wdl_type())
         expr = self.visitChildren(ctx.expr())
 
-        # if isinstance(type_, WDLBooleanType):
-        #     assert expr in ('true', 'false'), 'Parsed boolean ({}) must be expressed as "true" or "false".'
-        #     expr = expr.capitalize()
+        # assert expr in ('true', 'false'), 'Parsed boolean ({}) must be expressed as "true" or "false".'
+        if isinstance(type_, WDLBooleanType) and expr in ('true', 'false'):
+            expr = expr.capitalize()
 
         return name, OrderedDict({'name': name, 'type': type_, 'value': expr})
 
@@ -232,14 +232,7 @@ class AntlrToWorkflow(WdlParserVisitor):
         else:
             raise RuntimeError(f'Primitive literal has unknown child: {type(ctx.children[0])}.')
 
-    def visitLand(self, ctx: WdlParser.LandContext):
-        """
-        Logical AND infix.
-        """
-        lhs = self.visitInfix1(ctx.expr_infix1())
-        rhs = self.visitInfix2(ctx.expr_infix2())
-        return f'{lhs} and {rhs}'
-
+    # expr_infix0
     def visitLor(self, ctx: WdlParser.LorContext):
         """
         Logical OR infix.
@@ -251,8 +244,25 @@ class AntlrToWorkflow(WdlParserVisitor):
             rhs = self.visitInfix1(ctx.expr_infix1())
         return f'{lhs} or {rhs}'
 
+    # expr_infix1
+    def visitLand(self, ctx: WdlParser.LandContext):
+        """
+        Logical AND infix.
+        """
+        lhs = self.visitInfix1(ctx.expr_infix1())
+        rhs = self.visitInfix2(ctx.expr_infix2())
+        return f'{lhs} and {rhs}'
+
+    # expr_core
     def visitExpression_group(self, ctx: WdlParser.Expression_groupContext):
         """
         Contains: '(', `expr`, and ')'
         """
         return f'({self.visitExpr(ctx.expr())})'
+
+    # expr_core
+    def visitArray_literal(self, ctx: WdlParser.Array_literalContext):
+        """
+        Contains: [ (expr (, expr)*)* ]
+        """
+        return f"[{', '.join(self.visitExpr(expr) for expr in ctx.expr())}]"
