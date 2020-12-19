@@ -255,15 +255,46 @@ class AntlrToDict(WdlParserVisitor):
         return f'{lhs} and {rhs}'
 
     # expr_core
-    def visitExpression_group(self, ctx: WdlParser.Expression_groupContext):
-        """
-        Contains: '(', `expr`, and ')'
-        """
-        return f'({self.visitExpr(ctx.expr())})'
+    # see: https://github.com/w-gao/wdl/blob/main/versions/development/parsers/antlr4/WdlParser.g4#L121
 
-    # expr_core
     def visitArray_literal(self, ctx: WdlParser.Array_literalContext):
         """
-        Contains: [ (expr (, expr)*)* ]
+        Pattern: LBRACK (expr (COMMA expr)*)* RBRACK
         """
         return f"[{', '.join(self.visitExpr(expr) for expr in ctx.expr())}]"
+
+    # expr_core
+    def visitPair_literal(self, ctx: WdlParser.Pair_literalContext):
+        """
+        Pattern: LPAREN expr COMMA expr RPAREN
+        """
+        return f"({self.visitExpr(ctx.expr(0))}, {self.visitExpr(ctx.expr(1))})"
+
+    # expr_core
+    def visitMap_literal(self, ctx: WdlParser.Map_literalContext):
+        """
+        Pattern: LBRACE (expr COLON expr (COMMA expr COLON expr)*)* RBRACE
+        """
+        # return f"{{{', '.join()}}}"
+        pass
+
+    # expr_core
+    def visitStruct_literal(self, ctx:WdlParser.Struct_literalContext):
+        """
+        Pattern: Identifier LBRACE (Identifier COLON expr (COMMA Identifier COLON expr)*)* RBRACE
+        """
+        raise NotImplementedError(f'Structs are not implemented yet :(')
+
+    # expr_core
+    def visitIfthenelse(self, ctx: WdlParser.IfthenelseContext):
+        """
+        Pattern: IF expr THEN expr ELSE expr
+        """
+        pass
+
+    # expr_core
+    def visitExpression_group(self, ctx: WdlParser.Expression_groupContext):
+        """
+        Pattern: LPAREN expr RPAREN
+        """
+        return f'({self.visitExpr(ctx.expr())})'

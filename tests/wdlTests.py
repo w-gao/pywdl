@@ -34,7 +34,6 @@ class WorkflowTests(WdlTests):
     """
     Unit tests related to the workflow section.
     """
-    @unittest.skip
     def test_wf_input(self):
         """
         Test the workflow input section.
@@ -63,7 +62,6 @@ class WorkflowTests(WdlTests):
 
         self.assertEqual(wf, expected_wf)
 
-    @unittest.skip
     def test_wf_output(self):
         """
         Test the workflow output section.
@@ -146,3 +144,36 @@ class ExprTests(WdlTests):
 
         wf, _ = parse(InputStream(wf_expr_array))
         self.assertEqual(self.get_wf_value(wf, 'wf_expr_array', 0), '[1, 2, 3, 4, 5]')
+
+    def test_expr_pair(self):
+        wf_expr_pair = heredoc("""
+            version development
+
+            workflow wf_expr_pair {
+              input {
+                Pair[String, Int] in_pair = ('twenty', 20)
+              }
+            }
+        """)
+
+        wf, _ = parse(InputStream(wf_expr_pair))
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_pair', 0), "('twenty', 20)")
+
+        wf_expr_pair_integration = heredoc("""
+            version development
+
+            workflow wf_expr_pair_integration {
+              input {
+                Array[Pair[Int, String]] arr = [ (1, 'I'), (2, 'II'), (3, 'III'), (4, 'IV') ]
+              }
+            }
+        """)
+
+        wf, _ = parse(InputStream(wf_expr_pair_integration))
+
+        expected_output = "[(1, 'I'), (2, 'II'), (3, 'III'), (4, 'IV')]"
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_pair_integration', 0), expected_output)
+
+
+if __name__ == '__main__':
+    unittest.main()
