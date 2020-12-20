@@ -49,15 +49,15 @@ Compilation design; expressions are stored as Python code as strings in collecti
 
 #### Antlr4 to objects Transforms
 
-[ ] ?
+- [ ] ?
 
 ## License
 
-The following files come from [openwdl](https://github.com/openwdl/wdl/tree/main/versions/development/parsers/antlr4) under the [BSD 3-Clause "New" or "Revised" License](https://github.com/openwdl/wdl/blob/main/LICENSE).
+The following files come from [openwdl/wdl](https://github.com/openwdl/wdl/tree/main/versions/development/parsers/antlr4) under the [BSD 3-Clause "New" or "Revised" License](https://github.com/openwdl/wdl/blob/main/LICENSE).
 
-- [WdlLexer.g4](pywdl/antlr/WdlLexer.g4)
-- [WdlParser.g4](pywdl/antlr/WdlParser.g4)
+- [pywdl/antlr/WdlLexer.g4](pywdl/antlr/WdlLexer.g4)
+- [pywdl/antlr/WdlParser.g4](pywdl/antlr/WdlParser.g4)
 
-The following file is modified from [Toil](https://github.com/DataBiosphere/toil/) under the [Apache License, v2.0](https://github.com/DataBiosphere/toil/blob/master/LICENSE).
+The following file is modified from [DataBiosphere/toil](https://github.com/DataBiosphere/toil/) under the [Apache License, v2.0](https://github.com/DataBiosphere/toil/blob/master/LICENSE).
 
-- [wdl_parser.py](https://github.com/DataBiosphere/toil/blob/master/src/toil/wdl/wdl_types.py)
+- [pywdl/types.py](pywdl/types.py)
