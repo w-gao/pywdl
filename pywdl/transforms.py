@@ -1,4 +1,5 @@
 from collections import OrderedDict  # TODO: switch to dict.
+# from builtins import dict as OrderedDict
 
 from pywdl.antlr.WdlParser import WdlParser
 from pywdl.antlr.WdlParserVisitor import WdlParserVisitor
@@ -151,11 +152,14 @@ class WdlTransformer(WdlParserVisitor):
 
         name = '.'.join(identifier.getText() for identifier in ctx.call_name().Identifier())
         alias = ctx.call_alias().Identifier().getText() if ctx.call_alias() else name
-        afters = None  # To be implemented by Toil.
+        afters = None  # Newly added feature. To be implemented by Toil.
+
         body = OrderedDict({  # kvp generator
             input_.Identifier().getText(): self.visitExpr(input_.expr())
             for input_ in ctx.call_body().call_inputs().call_input()
-        }) if ctx.call_body() else None
+
+            # check if {} and {input: ...} are provided
+        }) if ctx.call_body() and ctx.call_body().call_inputs() else OrderedDict()
 
         self.call_number += 1
         return f'call{self.call_number}', {
@@ -372,7 +376,7 @@ class WdlTransformer(WdlParserVisitor):
         pass
 
     # expr_core
-    def visitStruct_literal(self, ctx:WdlParser.Struct_literalContext):
+    def visitStruct_literal(self, ctx: WdlParser.Struct_literalContext):
         """
         Pattern: Identifier LBRACE (Identifier COLON expr (COMMA Identifier COLON expr)*)* RBRACE
         """

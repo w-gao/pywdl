@@ -9,6 +9,11 @@ from pywdl.transforms import WdlTransformer
 from pywdl.types import WDLStringType
 
 
+"""
+A suite of test cases for the WDL -> Python dict output.
+"""
+
+
 def heredoc(template, indent=''):
     template = textwrap.dedent(template)
     return template.replace('\n', '\n' + indent) + '\n'
@@ -109,6 +114,169 @@ class WorkflowTests(WdlTests):
         # check if both declarations are present.
         self.assertEqual(len(wf['wf_decl_1']['wf_declarations']), 2)
 
+    def test_wf_call(self):
+        """
+        Test the workflow call section.
+        """
+        wf_call_1 = heredoc("""
+            version development
+
+            workflow wf_call_1 {
+              call t as t1
+              call t as t2 {}                   # this should be supported but throws an error in Toil
+              call t as t3 {input: in_str="hey"}
+            }
+            
+            task t {
+              input {
+                String in_str = 'hello'
+              }
+              
+              command {}
+            }
+        """)
+
+        wf, _ = parse(InputStream(wf_call_1))
+
+        expected_wf = {
+            'wf_call_1': {
+                'call0': {
+                    'task': 't',
+                    'alias': 't1',
+                    'io': {}
+                },
+                'call1': {
+                    'task': 't',
+                    'alias': 't2',
+                    'io': {}
+                },
+                'call2': {
+                    'task': 't',
+                    'alias': 't3',
+                    'io': {
+                        'in_str': '"hey"'
+                    }
+                }
+            }
+        }
+        self.assertEqual(wf, expected_wf)
+
+    def test_wf_scatter(self):
+        """
+        Test the workflow scatter section.
+        """
+        wf_scatter_1 = heredoc("""
+            version development
+
+            workflow wf_scatter_1 {
+            }
+            
+            task t {
+              input {
+                String in_str = 'hello'
+              }
+              
+              command {}
+            }
+        """)
+
+        wf, _ = parse(InputStream(wf_scatter_1))
+
+        expected_wf = {
+            'wf_scatter_1': {
+            }
+        }
+        self.assertEqual(wf, expected_wf)
+
+    def test_wf_conditional(self):
+        """
+        Test the workflow conditional section.
+        """
+        wf_conditional_1 = heredoc("""
+            version development
+
+            workflow wf_conditional_1 {
+            }
+            
+            task t {
+              input {
+                String in_str = 'hello'
+              }
+              
+              command {}
+            }
+        """)
+
+        wf, _ = parse(InputStream(wf_conditional_1))
+
+        expected_wf = {
+            'wf_conditional_1': {
+            }
+        }
+        self.assertEqual(wf, expected_wf)
+
+
+class TaskTests(WdlTests):
+    """
+    Unit tests related to the task section.
+    """
+    # input
+    # output
+
+    def test_task_command(self):
+        """
+        Test the task command section.
+        """
+        task_command_1 = heredoc("""
+            version development
+
+            workflow task_command_1 {
+            }
+
+            task t {
+              input {
+                String in_str = 'hello'
+              }
+
+              command {}
+            }
+        """)
+
+        wf, _ = parse(InputStream(task_command_1))
+
+        expected_wf = {
+            'task_command_1': {
+            }
+        }
+        self.assertEqual(wf, expected_wf)
+
+    def test_task_runtime(self):
+        """
+        Test the task runtime section.
+        """
+        task_runtime_1 = heredoc("""
+            version development
+
+            workflow task_runtime_1 {
+            }
+
+            task t {
+              input {
+                String in_str = 'hello'
+              }
+
+              command {}
+            }
+        """)
+
+        wf, _ = parse(InputStream(task_runtime_1))
+
+        expected_wf = {
+            'task_runtime_1': {
+            }
+        }
+        self.assertEqual(wf, expected_wf)
+
 
 class ExprTests(WdlTests):
     """
@@ -152,7 +320,7 @@ class ExprTests(WdlTests):
 
     def test_expr_array(self):
         """
-        Test Array literal expression.
+        Test the Array literal expression.
         """
         wf_expr_array = heredoc("""
             version development
@@ -169,7 +337,7 @@ class ExprTests(WdlTests):
 
     def test_expr_pair(self):
         """
-        Test Pair literal expression.
+        Test the Pair literal expression.
         """
         wf_expr_pair = heredoc("""
             version development
@@ -201,7 +369,7 @@ class ExprTests(WdlTests):
 
     def test_expr_ternary(self):
         """
-        Test ternary (If then else) expression.
+        Test the ternary (If then else) expression.
         """
         wf_expr_ternary = heredoc("""
             version development
@@ -220,6 +388,36 @@ class ExprTests(WdlTests):
         wf, _ = parse(InputStream(wf_expr_ternary))
         self.assertEqual(self.get_wf_value(wf, 'wf_expr_ternary', 'time'), '("morning" if morning else "afternoon")')
         # self.assertEqual(self.get_wf_value(wf, 'wf_expr_ternary', 'greeting'), '')
+
+    def test_expr_comparisons(self):
+        """
+        Test comparison (==, !=, <, >, <=, >=) expressions.
+        """
+        wf_expr_comparisons = heredoc("""
+            version development
+
+            workflow wf_expr_comparisons {
+            
+            }
+        """)
+
+        wf, _ = parse(InputStream(wf_expr_comparisons))
+        self.assertEqual(True, True)
+
+    def test_expr_arithmetic(self):
+        """
+        Test arithmetic operations (+, -, *, /, %) in expressions.
+        """
+        wf_expr_arithmetic = heredoc("""
+            version development
+
+            workflow wf_expr_arithmetic {
+            
+            }
+        """)
+
+        wf, _ = parse(InputStream(wf_expr_arithmetic))
+        self.assertEqual(True, True)
 
 
 class StressTests(WdlTests):
