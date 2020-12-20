@@ -266,7 +266,7 @@ class WdlTransformer(WdlParserVisitor):
     # expr_infix0
     def visitLor(self, ctx: WdlParser.LorContext):
         """
-        Logical OR infix.
+        Logical OR expression.
         """
         lhs = self.visitInfix0(ctx.expr_infix0())
         if isinstance(ctx.expr_infix1(), WdlParser.LandContext):
@@ -278,7 +278,7 @@ class WdlTransformer(WdlParserVisitor):
     # expr_infix1
     def visitLand(self, ctx: WdlParser.LandContext):
         """
-        Logical AND infix.
+        Logical AND expresion.
         """
         lhs = self.visitInfix1(ctx.expr_infix1())
         rhs = self.visitInfix2(ctx.expr_infix2())
@@ -365,8 +365,14 @@ class WdlTransformer(WdlParserVisitor):
     # see: https://github.com/w-gao/wdl/blob/main/versions/development/parsers/antlr4/WdlParser.g4#L121
 
     def visitApply(self, ctx: WdlParser.ApplyContext):
-        # TODO
-        pass
+        """
+        A function call expression.
+
+        Pattern: Identifier LPAREN (expr (COMMA expr)*)? RPAREN
+        """
+        # TODO: add an event dispatcher here so others can hook into this and change how functions are called.
+
+        return f'{ctx.Identifier().getText()}({", ".join(self.visitExpr(arg) for arg in ctx.expr())})'
 
     # expr_core
     def visitArray_literal(self, ctx: WdlParser.Array_literalContext):

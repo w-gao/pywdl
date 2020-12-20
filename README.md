@@ -1,31 +1,36 @@
 # pywdl
 
-## Road map
+## Checklist
 
-Antlr4 to Python compilation string Transforms
+- Top priority denoted as "**(!!)**".
+
+### WDL -> Python string Transforms
+
+Compilation design; expression are stored as Python code as strings in collections.
 
 - Types
   * [X] Primitives (String, Int, Float, Boolean, File)
     - [ ] Directory
   * [X] Compound (Array, Pair, Map)
-  * [ ] Struct **(!!)**
+  * [ ] Struct
 - Expression
   * [X] LOR, LAND
-  * [ ] ==, !==, <=, >=, <, >
-  * [ ] +, -
-  * [ ] *, /, %
-  * [ ] <=, <, =, >, >=
-  * [ ] apply
+  * [ ] ==, !==, <=, >=, <, > **(!!)**
+  * [ ] +, - **(!!)**
+  * [ ] *, /, % **(!!)**
+  * [ ] <=, <, =, >, >= **(!!)**
+  * [X] apply (function call)
+    - [ ] allow user to hook into this to modify how arguments are parsed. **(!!)**
   * [X] array_literal
   * [X] pair_literal
   * [ ] map_literal
   * [ ] struct_literal
   * [X] ifthenelse
   * [X] expression_group
-  * [ ] get_name
-  * [ ] negate
+  * [ ] get_name **(!!)**
+  * [ ] negate **(!!)**
   * [ ] unirarysigned
-  * [ ] primitives
+  * [ ] primitives __should work? needs testing__
   * [ ] left_name
 - Document
   * [ ] import
@@ -37,12 +42,12 @@ Antlr4 to Python compilation string Transforms
   * [X] conditional
   * [X] output
 - Task
-  * [ ] input
-  * [ ] runtime
-  * [ ] command
-  * [ ] output
+  * [ ] input **(!!)**
+  * [ ] runtime **(!!)**
+  * [ ] command **(!!)**
+  * [ ] output **(!!)**
 
-Antlr4 to Python objects Transforms?
+### Antlr4 to objects Transforms
 
 
 ## Credits

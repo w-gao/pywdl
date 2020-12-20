@@ -383,6 +383,21 @@ class ExprTests(WdlTests):
         wf, _ = parse(InputStream(wf_expr_array))
         self.assertEqual(self.get_wf_value(wf, 'wf_expr_array', 'arr'), '[1, 2, 3, 4, 5]')
 
+    def test_expr_apply(self):
+        """
+        Test the apply (functional call) expression.
+        """
+        wf_expr_apply = heredoc("""
+            version development
+
+            workflow wf_expr_apply {
+              Int size = size( 'test.json', 'kb' )
+            }
+        """)
+
+        wf, _ = parse(InputStream(wf_expr_apply))
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_apply', 'size'), "size('test.json', 'kb')")
+
     def test_expr_pair(self):
         """
         Test the Pair literal expression.
