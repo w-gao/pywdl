@@ -34,7 +34,7 @@ Antlr4 to Python compilation string Transforms
   * [X] input
   * [X] call
   * [X] scatter
-  * [ ] conditional
+  * [X] conditional
   * [X] output
 - Task
   * [ ] input

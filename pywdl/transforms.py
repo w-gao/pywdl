@@ -138,7 +138,7 @@ class WdlTransformer(WdlParserVisitor):
             return self.visitScatter(element)
         # conditional
         elif isinstance(element, WdlParser.ConditionalContext):
-            return 'UNIMPLEMENTED', {}
+            return self.visitConditional(element)
         else:
             raise RuntimeError(f'Unsupported workflow element in visitInner_workflow_element(): {type(element)}')
 
@@ -179,8 +179,8 @@ class WdlTransformer(WdlParserVisitor):
         expr = self.visitExpr(ctx.expr())
         body = OrderedDict()
         for element in ctx.inner_workflow_element():
-            name, contents = self.visitInner_workflow_element(element)
-            body[name] = contents
+            body_key, contents = self.visitInner_workflow_element(element)
+            body.setdefault(body_key, {}).update(contents)
 
         self.scatter_number += 1
         return f'scatter{self.scatter_number}', {
@@ -191,10 +191,25 @@ class WdlTransformer(WdlParserVisitor):
 
     def visitConditional(self, ctx: WdlParser.ConditionalContext):
         """
+        Pattern: IF LPAREN expr RPAREN LBRACE inner_workflow_element* RBRACE
+        Example WDL syntax: if (condition) { ... }
 
+        Returns a tuple=(if_id, dict={expression, body})
         """
-        # TODO
-        # return self.visitChildren(ctx)
+        # see https://github.com/openwdl/wdl/blob/main/versions/development/SPEC.md#conditionals
+
+        expr = self.visitExpr(ctx.expr())
+
+        body = OrderedDict()
+        for element in ctx.inner_workflow_element():
+            body_key, contents = self.visitInner_workflow_element(element)
+            body.setdefault(body_key, {}).update(contents)
+
+        self.if_number += 1
+        return f'if{self.if_number}', {
+            'expression': expr,
+            'body': body
+        }
 
     # Task section
 

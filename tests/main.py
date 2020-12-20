@@ -1,5 +1,5 @@
 from antlr4 import FileStream
-from tests.wdlTests import parse
+from tests.parserTests import parse
 
 
 """

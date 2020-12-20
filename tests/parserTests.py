@@ -8,7 +8,6 @@ from pywdl.antlr.WdlLexer import WdlLexer, CommonTokenStream
 from pywdl.transforms import WdlTransformer
 from pywdl.types import WDLStringType
 
-
 """
 A suite of test cases for the WDL -> Python dict output.
 """
@@ -39,6 +38,7 @@ class WorkflowTests(WdlTests):
     """
     Unit tests related to the workflow section.
     """
+
     def test_wf_input(self):
         """
         Test the workflow input section.
@@ -196,14 +196,22 @@ class WorkflowTests(WdlTests):
             version development
 
             workflow wf_conditional_1 {
+              Boolean condition = true
+
+              if (condition) {
+                call t as t1
+                call t as t2
+                Int out_t1 = t1.out
+                Int out_t2 = t2.out
+              }
             }
             
             task t {
-              input {
-                String in_str = 'hello'
-              }
-              
               command {}
+
+              output {
+                Int out = 0
+              }
             }
         """)
 
@@ -211,6 +219,44 @@ class WorkflowTests(WdlTests):
 
         expected_wf = {
             'wf_conditional_1': {
+                'wf_declarations': {
+                    'condition': {
+                        'name': 'condition',
+                        'type': 'Boolean',
+                        'value': 'True'
+                    }
+                },
+                'if0': {
+                    'expression': 'condition',
+                    'body': {
+                        'call0': {
+                            'task': 't',
+                            'alias': 't1',
+                            'io': {
+                            }
+                        },
+                        'call1': {
+                            'task': 't',
+                            'alias': 't2',
+                            'io': {
+                            }
+                        },
+                        # FIXME: Toil puts `wf_declarations` at the top, but we're following the definition order.
+                        #  This should be fine?
+                        'wf_declarations': {
+                            'out_t1': {
+                                'name': 'out_t1',
+                                'type': 'Int',
+                                'value': None  # this shall be fixed soon
+                            },
+                            'out_t2': {
+                                'name': 'out_t2',
+                                'type': 'Int',
+                                'value': None  # this shall be fixed soon
+                            }
+                        }
+                    }
+                }
             }
         }
         self.assertEqual(wf, expected_wf)
@@ -220,6 +266,7 @@ class TaskTests(WdlTests):
     """
     Unit tests related to the task section.
     """
+
     # input
     # output
 
@@ -282,6 +329,7 @@ class ExprTests(WdlTests):
     """
     Unit tests related to WDL expressions.
     """
+
     @staticmethod
     def get_wf_value(wf, wf_name, key):
         return wf.get(wf_name).get('wf_declarations').get(key).get('value')
