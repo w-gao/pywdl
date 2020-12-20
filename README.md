@@ -30,7 +30,7 @@ Compilation design; expressions are stored as Python code as strings in collecti
   * [ ] get_name **(!!)**
   * [ ] negate **(!!)**
   * [ ] unirarysigned
-  * [ ] primitives __should work? needs testing__
+  * [X] primitives (including None and variables)
   * [ ] left_name
 - Document
   * [ ] import

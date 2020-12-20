@@ -6,7 +6,12 @@ from antlr4 import InputStream, FileStream
 from pywdl.antlr.WdlParser import WdlParser
 from pywdl.antlr.WdlLexer import WdlLexer, CommonTokenStream
 from pywdl.transforms import WdlTransformer
-from pywdl.types import WDLStringType
+from pywdl.types import (WDLStringType,
+                         WDLIntType,
+                         WDLFloatType,
+                         WDLBooleanType,
+                         WDLFileType,
+                         WDLArrayType)
 
 """
 A suite of test cases for the WDL -> Python dict output.
@@ -26,6 +31,9 @@ def parse(stream):
 
     visitor = WdlTransformer()
     visitor.visit(tree)
+
+    from scripts.formatter import write_mappings
+    write_mappings(visitor)
 
     return visitor.workflows_dictionary, visitor.tasks_dictionary
 
@@ -167,13 +175,18 @@ class WorkflowTests(WdlTests):
         """
         wf_scatter_1 = heredoc("""
             version development
-
             workflow wf_scatter_1 {
+              input {
+                Array[Int] numbers = [ 1, 2, 3 ]
+              }
+              scatter(num in numbers) {
+                call t {input: in_num=num}
+              }
             }
             
             task t {
               input {
-                String in_str = 'hello'
+                Int in_num
               }
               
               command {}
@@ -184,6 +197,26 @@ class WorkflowTests(WdlTests):
 
         expected_wf = {
             'wf_scatter_1': {
+                'wf_declarations': {
+                    'numbers': {
+                        'name': 'numbers',
+                        'type': WDLArrayType(WDLIntType()),
+                        "value": '[1, 2, 3]'
+                    }
+                },
+                'scatter0': {
+                    'item': 'num',
+                    'collection': 'numbers',
+                    'body': {
+                        'call0': {
+                            'task': 't',
+                            'alias': 't',
+                            'io': {
+                                'in_num': 'num'
+                            }
+                        }
+                    }
+                }
             }
         }
         self.assertEqual(wf, expected_wf)
@@ -334,14 +367,14 @@ class ExprTests(WdlTests):
     def get_wf_value(wf, wf_name, key):
         return wf.get(wf_name).get('wf_declarations').get(key).get('value')
 
-    def test_expr_infix_0(self):
+    def test_expr_lor_land(self):
         """
-        Test expr_infix0, expr_infix1, and expression_group (logical OR, logical AND, and group).
+        Test logical OR, logical AND, and group (parenthesis).
         """
-        wf_expr_infix_1 = heredoc("""
+        wf_expr_lor_land_1 = heredoc("""
             version development
 
-            workflow wf_expr_infix_0 {
+            workflow wf_expr_lor_land_1 {
               input {
                   Int n0 = 0
                   Int n5 = 5
@@ -357,14 +390,29 @@ class ExprTests(WdlTests):
             }
         """)
 
-        wf, _ = parse(InputStream(wf_expr_infix_1))
-        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 'bool_or'), 'n0 or n10')
-        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 'bool_and'), 'n0 and n10')
-        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 'bool_or_and_1'), 'n0 or n10 and n5')
-        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 'bool_or_and_2'), '(n0 or n10) and n5')
-        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 'bool_and_or_1'), 'n0 and n10 or n5')
-        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 'bool_and_or_2'), '(n0 and n10) or n5')
-        self.assertEqual(self.get_wf_value(wf, 'wf_expr_infix_0', 'bool_and_or_3'), 'n0 and (n10 or n5)')
+        wf, _ = parse(InputStream(wf_expr_lor_land_1))
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_lor_land_1', 'bool_or'), 'n0 or n10')
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_lor_land_1', 'bool_and'), 'n0 and n10')
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_lor_land_1', 'bool_or_and_1'), 'n0 or n10 and n5')
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_lor_land_1', 'bool_or_and_2'), '(n0 or n10) and n5')
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_lor_land_1', 'bool_and_or_1'), 'n0 and n10 or n5')
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_lor_land_1', 'bool_and_or_2'), '(n0 and n10) or n5')
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_lor_land_1', 'bool_and_or_3'), 'n0 and (n10 or n5)')
+
+    def test_expr_apply(self):
+        """
+        Test the apply (functional call) expression.
+        """
+        wf_expr_apply = heredoc("""
+            version development
+
+            workflow wf_expr_apply {
+              Int size = size( 'test.json', 'kb' )
+            }
+        """)
+
+        wf, _ = parse(InputStream(wf_expr_apply))
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_apply', 'size'), "size('test.json', 'kb')")
 
     def test_expr_array(self):
         """
@@ -382,21 +430,6 @@ class ExprTests(WdlTests):
 
         wf, _ = parse(InputStream(wf_expr_array))
         self.assertEqual(self.get_wf_value(wf, 'wf_expr_array', 'arr'), '[1, 2, 3, 4, 5]')
-
-    def test_expr_apply(self):
-        """
-        Test the apply (functional call) expression.
-        """
-        wf_expr_apply = heredoc("""
-            version development
-
-            workflow wf_expr_apply {
-              Int size = size( 'test.json', 'kb' )
-            }
-        """)
-
-        wf, _ = parse(InputStream(wf_expr_apply))
-        self.assertEqual(self.get_wf_value(wf, 'wf_expr_apply', 'size'), "size('test.json', 'kb')")
 
     def test_expr_pair(self):
         """
@@ -481,6 +514,71 @@ class ExprTests(WdlTests):
 
         wf, _ = parse(InputStream(wf_expr_arithmetic))
         self.assertEqual(True, True)
+
+    def test_expr_primitives(self):
+        """
+        Test primitives in expressions.
+        """
+        wf_expr_primitives_1 = heredoc("""
+            version development
+
+            workflow wf_expr_primitives_1 {
+              Int num = 10
+              String text = 'hello'
+              Float real = 2.7
+              Boolean bool = false
+              File file = 'test.json'
+              
+              String none = None
+              String var = text
+            }
+        """)
+
+        wf, _ = parse(InputStream(wf_expr_primitives_1))
+        print(wf)
+        expected_wf = {
+            'wf_expr_primitives_1': {
+                'wf_declarations': {
+                    'num': {
+                        'name': 'num',
+                        'type': WDLIntType(),
+                        'value': '10'
+                    },
+                    'text': {
+                        'name': 'text',
+                        'type': WDLStringType(),
+                        'value': "'hello'"
+                    },
+                    'real': {
+                        'name': 'real',
+                        'type': WDLFloatType(),
+                        'value': '2.7'
+                    },
+                    'bool': {
+                        'name': 'bool',
+                        'type': WDLBooleanType(),
+                        'value': 'False'
+                    },
+                    'file': {
+                        'name': 'file',
+                        'type': WDLFileType(),
+                        'value': "'test.json'"
+                    },
+                    'none': {
+                        'name': 'none',
+                        'type': WDLStringType(),
+                        'value': 'None'
+                    },
+                    'var': {
+                        'name': 'var',
+                        'type': WDLStringType(),
+                        'value': 'text'  # variable name without quotes, correct.
+                    }
+                }
+            }
+        }
+
+        self.assertEqual(wf, expected_wf)
 
 
 class StressTests(WdlTests):

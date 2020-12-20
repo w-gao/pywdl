@@ -256,7 +256,7 @@ class WdlTransformer(WdlParserVisitor):
         """
         Returns the primitive literal as a string.
         """
-        if isinstance(ctx.children[0], (TerminalNodeImpl,
+        if isinstance(ctx.children[0], (TerminalNodeImpl,  # variables, most likely
                                         WdlParser.StringContext,
                                         WdlParser.NumberContext)):
             return ctx.children[0].getText()
