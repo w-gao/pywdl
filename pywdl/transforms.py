@@ -270,7 +270,7 @@ class WdlTransformer(WdlParserVisitor):
                 task['raw_commandline'] = self.visitTask_command(section)
             # runtime
             elif isinstance(section, WdlParser.Task_runtimeContext):
-                print('task runtime')
+                task['runtime'] = self.visitTask_runtime(section)
             # bound_decls
             elif isinstance(section, WdlParser.Bound_declsContext):
                 # append to inputs, for Toil. These should be different from inputs, however.
@@ -375,6 +375,19 @@ class WdlTransformer(WdlParserVisitor):
         Returns the expression.
         """
         return self.visitExpr(ctx.expr())
+
+    def visitTask_runtime(self, ctx: WdlParser.Task_runtimeContext):
+        """
+        Contains an array of `task_runtime_kv`s.
+
+        Returns a dict={key: value} where key can be 'container', 'cpu',
+        'memory', 'cores', 'disks', etc.
+        """
+        pairs = OrderedDict()
+        for kv in ctx.task_runtime_kv():
+            key = kv.children[0].getText()
+            pairs[key] = self.visitExpr(kv.expr())
+        return pairs
 
     # Shared
 

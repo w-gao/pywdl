@@ -271,8 +271,6 @@ class WorkflowTests(WdlTests):
                             'io': {
                             }
                         },
-                        # FIXME: Toil puts `wf_declarations` at the top, but we're following the definition order.
-                        #  This should be fine?
                         'wf_declarations': {
                             'out_t1': {
                                 'name': 'out_t1',
@@ -301,8 +299,71 @@ class TaskTests(WdlTests):
     def get_task_command(task, task_name):
         return task.get(task_name).get('raw_commandline')
 
-    # input
-    # output
+    def test_task_input(self):
+        """
+        Test the task input section.
+        """
+        task_input_1 = heredoc("""
+            version development
+
+            workflow task_input_1 {}
+
+            task t {
+              input {
+                String in_str = "hello"     # bounded
+                Int in_int                  # unbounded
+              }
+              Array[Int] numbers = [ 1,2,3 ]        # non-input declaration
+
+              command {}
+            }
+        """)
+
+        _, task = parse(InputStream(task_input_1))
+
+        expected_task = {
+            't': {
+                'inputs': [
+                    ('in_str', WDLStringType(), '"hello"'),
+                    ('in_int', WDLIntType(), None),
+                    ('numbers', WDLArrayType(WDLIntType()), '[1, 2, 3]')
+                ],
+                'raw_commandline': []
+            }
+        }
+
+        self.assertEqual(task, expected_task)
+
+    def test_task_output(self):
+        """
+        Test the task output section.
+        """
+        task_output_1 = heredoc("""
+            version development
+
+            workflow task_output_1 {}
+
+            task t {
+              command {}
+
+              output {
+                File out_file = stdout()
+              }
+            }
+        """)
+
+        _, task = parse(InputStream(task_output_1))
+
+        expected_task = {
+            't': {
+                'raw_commandline': [],
+                'outputs': [
+                    ('out_file', WDLFileType(), 'stdout()'),
+                ]
+            }
+        }
+
+        self.assertEqual(task, expected_task)
 
     def test_task_command(self):
         """
@@ -393,21 +454,29 @@ class TaskTests(WdlTests):
             }
 
             task t {
-              input {
-                String in_str = "hello"
+              runtime {
+                container: "ubuntu:latest"
+                cpu: 1
+                memory: "512 MB"
               }
 
               command {}
             }
         """)
 
-        wf, _ = parse(InputStream(task_runtime_1))
+        _, task = parse(InputStream(task_runtime_1))
 
-        expected_wf = {
-            'task_runtime_1': {
+        expected_task = {
+            't': {
+                'runtime': {
+                    'container': '"ubuntu:latest"',
+                    'cpu': '1',
+                    'memory': '"512 MB"'
+                },
+                'raw_commandline': []
             }
         }
-        self.assertEqual(wf, expected_wf)
+        self.assertEqual(task, expected_task)
 
 
 class ExprTests(WdlTests):

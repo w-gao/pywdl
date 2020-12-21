@@ -4,6 +4,9 @@ FLAGS = -jar $(ANTLR_VERSION).jar -Dlanguage=Python3
 
 all: generate clean-extras
 
+test:
+	python -m pytest tests/parserTests.py
+
 # Download antlr4 locally
 antlr:
 	if [ ! -f $(ANTLR_VERSION).jar ]; then \

@@ -133,6 +133,11 @@ wf_1_tasks_dict = {
         'raw_commandline': [
             'r\'\'\'\n    echo "line 1"\n    echo "line 2"\n    echo "line 3"\n  \'\'\''
         ],
+        'runtime': {
+            'container': '"ubuntu:latest"',
+            'cpu': '1',
+            'memory': '"3GB"'
+        },
         'outputs': [
         ]
     },

@@ -50,7 +50,7 @@ Compilation design; expressions are stored as Python code as strings in collecti
   * [X] input
   * [X] output
   * [X] command
-  * [ ] runtime **(!!)**
+  * [X] runtime
   * [ ] hints
   * [X] bound_decls (non-input declarations)
   * [ ] parameter_meta
