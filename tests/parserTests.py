@@ -615,12 +615,19 @@ class ExprTests(WdlTests):
             version development
 
             workflow wf_expr_comparisons {
-            
+              Boolean b_1 = 3 == 4
+              Boolean b_2 = 3 != 4
+              Boolean b_3 = 3 >= 4
+              Boolean b_4 = 3 < 4
             }
         """)
 
         wf, _ = parse(InputStream(wf_expr_comparisons))
-        self.assertEqual(True, True)
+
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_comparisons', 'b_1'), '3 == 4')
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_comparisons', 'b_2'), '3 != 4')
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_comparisons', 'b_3'), '3 >= 4')
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_comparisons', 'b_4'), '3 < 4')
 
     def test_expr_arithmetic(self):
         """

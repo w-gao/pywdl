@@ -11,16 +11,15 @@ Compilation design; expressions are stored as Python code as strings in collecti
 - Types
   * [X] Primitives (String, Int, Float, Boolean, File)
     - [ ] Directory
-    - [ ] allow user to hook into this to modify how types are parsed. **(!!)**
+    - [ ] allow user to hook into this to modify how this is parsed. **(!!)**
   * [X] Compound (Array, Pair, Map)
   * [ ] Struct
 - Expression
   * [X] LOR, LAND
-  * [ ] ==, !=, <=, >=, <, > **(!!)**
+  * [X] ==, !=, <=, >=, <, >
   * [X] +, -
   * [X] *, /, %
   * [X] apply (function call)
-    - [X] allow user to hook into this to modify how arguments are parsed.
   * [X] array_literal
   * [X] pair_literal
   * [ ] map_literal
@@ -28,6 +27,7 @@ Compilation design; expressions are stored as Python code as strings in collecti
   * [X] ifthenelse
   * [X] expression_group
   * [ ] get_name **(!!)**
+    - [ ] allow user to hook into this to modify how this is parsed. **(!!)**
   * [ ] negate **(!!)**
   * [ ] unirarysigned
   * [X] primitives (including None and variables)
