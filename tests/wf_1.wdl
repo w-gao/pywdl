@@ -1,9 +1,10 @@
+# this is a valid WDL workflow but does not execute on Toil, unfortunately.
+
 version development
 
 #import "other.wdl" as other
 
 workflow wf_1 {
-
   input {
     String in_str = "hi"  # bounded
     String? in_str_opt    # optional
@@ -18,25 +19,51 @@ workflow wf_1 {
   if (in_bool) {
     # conditionals
   }
+  if (in_bool) {
+    String temp = "Test"
+  }
+  # temp should be set to None if not defined!
 
-
-  call task_1 {input: in_str=in_str}
+  call t1 {input: in_str=temp}
 
   Array[Int] scatters = [1, 2, 3, 4, 5]
 
   scatter ( i in scatters) {
-	  call task_2 as bar {input: in_int=i}
+	  call t2 as bar
   }
 
   output {
-    Array[String] wf_out = bar.out
+    Array[Int] wf_out = bar.num
   }
 }
 
-task task_1 {
+task t1 {
 
   input {
-    String in_str = "twenty"
+    String? in_str
+    Int in_int = 20
+    Float in_float = 3.14
+  }
+
+  String non_input_str = "yes"
+
+  command <<<
+  >>>
+}
+
+task t2 {
+  command {}
+
+  output {
+    Int num = 3  # seems like Toil parses this to string '3', which is werid.
+  }
+}
+
+task t3 {
+  command {
+    echo "line 1"
+    echo "line 2"
+    echo "line 3"
   }
 
   runtime {
@@ -45,24 +72,13 @@ task task_1 {
     memory: "3GB"
   }
 
-  command <<<
-  >>>
-
-  output {
-    String t1_out = ""
-  }
+  output {}
 }
 
-task task_2 {
-  input {
-    Int in_int
-  }
-
-  command <<<
-    echo "out: ~{in_int}"
-  >>>
-
-  output {
-    String t2_out = read_string(stdout())
+task t4 {
+  String str = "hello"
+  Float num = 1.9
+  command {
+    echo "~{round(num)} test~{ceil(num)}~{floor(num)} ~{str}test"
   }
 }

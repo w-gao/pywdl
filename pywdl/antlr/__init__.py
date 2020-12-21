@@ -1,1 +1,1 @@
-# Run `make` to populate this folder.
+# Run `make` on project root directory to populate this folder.

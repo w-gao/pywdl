@@ -88,7 +88,7 @@ class WdlTransformer(WdlParserVisitor):
 
             # input
             if isinstance(section, WdlParser.Workflow_inputContext):
-                wf.setdefault('wf_declarations', {}).update(self.visitWorkflow_input(section))
+                wf.setdefault('wf_declarations', OrderedDict()).update(self.visitWorkflow_input(section))
             # output
             elif isinstance(section, WdlParser.Workflow_outputContext):
                 wf['wf_outputs'] = self.visitWorkflow_output(section)
@@ -102,7 +102,6 @@ class WdlTransformer(WdlParserVisitor):
             # meta
             elif isinstance(section, WdlParser.Meta_elementContext):
                 print('[Warning] `meta` is not supported.')
-
             else:
                 raise RuntimeError(f'Unrecognized workflow element in visitWorkflow(): {type(section)}')
 
@@ -118,7 +117,7 @@ class WdlTransformer(WdlParserVisitor):
 
         Returns a dict={name: decl}.
         """
-        return OrderedDict(self.visitAny_decls(decl) for decl in ctx.any_decls())
+        return dict(self.visitAny_decls(decl) for decl in ctx.any_decls())
 
     def visitWorkflow_output(self, ctx: WdlParser.Workflow_outputContext):
         """
@@ -126,12 +125,12 @@ class WdlTransformer(WdlParserVisitor):
 
         Example:
             output {
-              String out_str = read_string(stdout())
+              String out_str = "output"
             }
 
-        Returns an array of tuples=(name, decl).
+        Returns a dict={name: decl}.
         """
-        return OrderedDict(self.visitBound_decls(decl) for decl in ctx.bound_decls())
+        return dict(self.visitBound_decls(decl) for decl in ctx.bound_decls())
 
     def visitInner_workflow_element(self, ctx: WdlParser.Inner_workflow_elementContext):
         """
@@ -194,7 +193,7 @@ class WdlTransformer(WdlParserVisitor):
         body = OrderedDict()
         for element in ctx.inner_workflow_element():
             body_key, contents = self.visitInner_workflow_element(element)
-            body.setdefault(body_key, {}).update(contents)
+            body.setdefault(body_key, OrderedDict()).update(contents)
 
         self.scatter_number += 1
         return f'scatter{self.scatter_number}', {
@@ -217,7 +216,7 @@ class WdlTransformer(WdlParserVisitor):
         body = OrderedDict()
         for element in ctx.inner_workflow_element():
             body_key, contents = self.visitInner_workflow_element(element)
-            body.setdefault(body_key, {}).update(contents)
+            body.setdefault(body_key, OrderedDict()).update(contents)
 
         self.if_number += 1
         return f'if{self.if_number}', {
@@ -241,10 +240,10 @@ class WdlTransformer(WdlParserVisitor):
 
             # input
             if isinstance(section, WdlParser.Task_inputContext):
-                print('task input')
+                task.setdefault('inputs', []).extend(self.visitTask_input(section))
             # output
             elif isinstance(section, WdlParser.Task_outputContext):
-                print('task output')
+                task['outputs'] = self.visitTask_output(section)
             # command
             elif isinstance(section, WdlParser.Task_commandContext):
                 print('task command')
@@ -256,7 +255,9 @@ class WdlTransformer(WdlParserVisitor):
                 print('[Warning] `hints` is not supported.')
             # bound_decls
             elif isinstance(section, WdlParser.Bound_declsContext):
-                print('task bound_decls')
+                # append to inputs, for Toil. These should be different from inputs, however.
+                name, decl = self.visitBound_decls(section)
+                task.setdefault('inputs', []).append(tuple(decl.values()))
             # parameter_meta
             elif isinstance(section, WdlParser.Parameter_meta_elementContext):
                 print('[Warning] `parameter_meta` is not supported.')
@@ -265,6 +266,41 @@ class WdlTransformer(WdlParserVisitor):
                 print('[Warning] `meta` is not supported.')
             else:
                 raise RuntimeError(f'Unrecognized workflow element in visitWorkflow(): {type(section)}')
+
+    def visitTask_input(self, ctx: WdlParser.Task_inputContext):
+        """
+        Contains an array of 'any_decls', which can be unbounded or bounded declarations.
+
+        Example:
+            input {
+              String in_str = "twenty"
+              Int in_int
+            }
+
+        Returns an array of tuple=(name, type, value)
+        """
+        inputs = []
+        for decl in ctx.any_decls():
+            name, decl = self.visitAny_decls(decl)
+            inputs.append(tuple(decl.values()))
+        return inputs
+
+    def visitTask_output(self, ctx: WdlParser.Task_outputContext):
+        """
+        Contains an array of 'bound_decls' (unbound_decls not allowed).
+
+        Example:
+            output {
+              String out_str = read_string(stdout())
+            }
+
+        Returns an array of tuple=(name, type, value)
+        """
+        inputs = []
+        for decl in ctx.bound_decls():
+            name, decl = self.visitBound_decls(decl)
+            inputs.append(tuple(decl.values()))
+        return inputs
 
     # Shared
 
