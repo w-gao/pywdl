@@ -4,13 +4,14 @@
 
 - Top priority denoted as "**(!!)**".
 
-#### WDL -> Python string Transforms
+#### WDL -> Python objects Transforms
 
 Compilation design; expressions are stored as Python code as strings in collections.
 
 - Types
   * [X] Primitives (String, Int, Float, Boolean, File)
     - [ ] Directory
+    - [ ] allow user to hook into this to modify how arguments are parsed. **(!!)**
   * [X] Compound (Array, Pair, Map)
   * [ ] Struct
 - Expression
@@ -19,7 +20,7 @@ Compilation design; expressions are stored as Python code as strings in collecti
   * [X] +, -
   * [X] *, /, %
   * [X] apply (function call)
-    - [ ] allow user to hook into this to modify how arguments are parsed. **(!!)**
+    - [X] allow user to hook into this to modify how arguments are parsed. **(!!)**
   * [X] array_literal
   * [X] pair_literal
   * [ ] map_literal
@@ -33,22 +34,28 @@ Compilation design; expressions are stored as Python code as strings in collecti
   * [ ] left_name
 - Document
   * [ ] import
-  * [ ] meta
+  * [ ] struct
+  * [X] task
+  * [X] workflow
 - Workflow
   * [X] input
+  * [X] output
+  * [X] bound_decls (non-input declarations)
   * [X] call
   * [X] scatter
   * [X] conditional
-  * [X] output
+  * [ ] parameter_meta
+  * [ ] meta
 - Task
-  * [ ] input **(!!)**
-  * [ ] runtime **(!!)**
+  * [X] input
+  * [X] output
   * [ ] command **(!!)**
-  * [ ] output **(!!)**
+  * [ ] runtime **(!!)**
+  * [ ] hints
+  * [X] bound_decls (non-input declarations)
+  * [ ] parameter_meta
+  * [ ] meta
 
-#### Antlr4 to objects Transforms
-
-- [ ] ?
 
 ## License
 

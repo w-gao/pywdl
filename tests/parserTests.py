@@ -14,7 +14,7 @@ from pywdl.types import (WDLStringType,
                          WDLArrayType)
 
 """
-A suite of test cases for the WDL -> Python dict output.
+A suite of test cases for the default behavior of our WDL -> Python object output.
 """
 
 
