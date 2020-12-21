@@ -54,13 +54,17 @@ class WdlTransformer(WdlParserVisitor):
         """
         Contains one of the following: 'import_doc', 'struct', 'workflow', or 'task'.
         """
-        # TODO: add support for imports.
-        assert isinstance(ctx.children[0], (WdlParser.WorkflowContext,
-                                            WdlParser.TaskContext,
-                                            WdlParser.ScatterContext)), \
-            'Import is not supported.'
-
-        return self.visitChildren(ctx)
+        element = ctx.children[0]
+        if isinstance(element, WdlParser.WorkflowContext):
+            return self.visitWorkflow(element)
+        elif isinstance(element, WdlParser.TaskContext):
+            return self.visitTask(element)
+        elif isinstance(element, WdlParser.StructContext):
+            # TODO: add support for structs.
+            raise NotImplementedError('Struct is not supported.')
+        elif isinstance(element, WdlParser.Import_docContext):
+            # TODO: add support for imports.
+            raise NotImplementedError('Import other WDL files is not supported.')
 
     # Workflow section
 
@@ -239,7 +243,7 @@ class WdlTransformer(WdlParserVisitor):
         """
         name = ctx.Identifier().getText()
         type_ = self.visitWdl_type(ctx.wdl_type())
-        expr = self.visitChildren(ctx.expr())
+        expr = self.visitExpr(ctx.expr())
 
         if isinstance(type_, WDLBooleanType) and expr in ('true', 'false'):
             expr = expr.capitalize()
