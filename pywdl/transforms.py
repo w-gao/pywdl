@@ -263,103 +263,109 @@ class WdlTransformer(WdlParserVisitor):
         else:
             raise RuntimeError(f'Primitive literal has unknown child: {type(ctx.children[0])}.')
 
-    # expr_infix0
+    def visitInfix0(self, ctx: WdlParser.Infix0Context):
+        """
+        Expression infix0 (LOR).
+        """
+        infix = ctx.expr_infix0()
+        if isinstance(infix, WdlParser.LorContext):
+            return self.visitLor(infix)
+        return self.visitInfix1(infix)
+
     def visitLor(self, ctx: WdlParser.LorContext):
         """
         Logical OR expression.
         """
-        lhs = self.visitInfix0(ctx.expr_infix0())
-        if isinstance(ctx.expr_infix1(), WdlParser.LandContext):
-            rhs = self.visitLand(ctx.expr_infix1())
-        else:
-            rhs = self.visitInfix1(ctx.expr_infix1())
+        lhs = self.visitInfix0(ctx)
+        rhs = self.visitInfix1(ctx)
         return f'{lhs} or {rhs}'
 
-    # expr_infix1
+    def visitInfix1(self, ctx: WdlParser.Infix1Context):
+        """
+        Expression infix1 (LAND).
+        """
+        infix = ctx.expr_infix1()
+        if isinstance(infix, WdlParser.LandContext):
+            return self.visitLand(infix)
+        return self.visitInfix2(infix)
+
     def visitLand(self, ctx: WdlParser.LandContext):
         """
         Logical AND expresion.
         """
-        lhs = self.visitInfix1(ctx.expr_infix1())
-        rhs = self.visitInfix2(ctx.expr_infix2())
+        lhs = self.visitInfix1(ctx)
+        rhs = self.visitInfix2(ctx)
         return f'{lhs} and {rhs}'
 
-    # expr_infix2
-    def visitEqeq(self, ctx: WdlParser.EqeqContext):
+    def visitInfix2(self, ctx: WdlParser.Infix2Context):
         """
-        Equality (==) expression.
+        Expression infix2 (comparisons).
         """
-        pass
+        infix = ctx.expr_infix2()
+        if isinstance(infix, WdlParser.EqeqContext):
+            return self._visitInfix2(infix, '==')
+        elif isinstance(infix, WdlParser.NeqContext):
+            return self._visitInfix2(infix, '!=')
+        elif isinstance(infix, WdlParser.LteContext):
+            return self._visitInfix2(infix, '<=')
+        elif isinstance(infix, WdlParser.GteContext):
+            return self._visitInfix2(infix, '>=')
+        elif isinstance(infix, WdlParser.LtContext):
+            return self._visitInfix2(infix, '<')
+        elif isinstance(infix, WdlParser.GtContext):
+            return self._visitInfix2(infix, '>')
+        # continue down our path
+        return self.visitInfix3(infix)
 
-    # expr_infix2
-    def visitNeq(self, ctx: WdlParser.NeqContext):
+    def _visitInfix2(self, ctx, operation: str):
         """
-        Inequality (!=) expression.
+        :param operation: Operation as a string.
         """
-        pass
+        lhs = self.visitInfix2(ctx)
+        rhs = self.visitInfix3(ctx)
+        return f'{lhs} {operation} {rhs}'
 
-    # expr_infix2
-    def visitLte(self, ctx: WdlParser.LteContext):
+    def visitInfix3(self, ctx: WdlParser.Infix3Context):
         """
-        Less than or equal to (<=) expression.
+        Expression infix3 (add/subtract).
         """
-        pass
+        infix = ctx.expr_infix3()
+        if isinstance(infix, WdlParser.AddContext):
+            return self._visitInfix3(infix, '+')
+        elif isinstance(infix, WdlParser.SubContext):
+            return self._visitInfix3(infix, '-')
+        # continue down our path
+        return self.visitInfix4(infix)
 
-    # expr_infix2
-    def visitGte(self, ctx: WdlParser.GteContext):
+    def _visitInfix3(self, ctx, operation: str):
         """
-        Greater or equal to (>=) expression.
+        :param operation: Operation as a string.
         """
-        pass
+        lhs = self.visitInfix3(ctx)
+        rhs = self.visitInfix4(ctx)
+        return f'{lhs} {operation} {rhs}'
 
-    # expr_infix2
-    def visitLt(self, ctx: WdlParser.LtContext):
+    def visitInfix4(self, ctx: WdlParser.Infix4Context):
         """
-        Less than (<) expression.
+        Expression infix4 (multiply/divide/modulo).
         """
-        pass
+        infix = ctx.expr_infix4()
+        if isinstance(infix, WdlParser.MulContext):
+            return self._visitInfix4(infix, '*')
+        elif isinstance(infix, WdlParser.DivideContext):
+            return self._visitInfix4(infix, '/')
+        elif isinstance(infix, WdlParser.ModContext):
+            return self._visitInfix4(infix, '%')
+        # continue down our path
+        return self.visitInfix5(infix)
 
-    # expr_infix2
-    def visitGt(self, ctx: WdlParser.GtContext):
+    def _visitInfix4(self, ctx, operation: str):
         """
-        Greater than (>) expression.
+        :param operation: Operation as a string.
         """
-        pass
-
-    # expr_infix3
-    def visitAdd(self, ctx: WdlParser.AddContext):
-        """
-        Addition (+) expression.
-        """
-        pass
-
-    # expr_infix3
-    def visitSub(self, ctx: WdlParser.SubContext):
-        """
-        Subtraction (-) expression.
-        """
-        pass
-
-    # expr_infix4
-    def visitMul(self, ctx: WdlParser.MulContext):
-        """
-        Multiply (*) expression.
-        """
-        pass
-
-    # expr_infix4
-    def visitDivide(self, ctx: WdlParser.DivideContext):
-        """
-        Divide (/) expression.
-        """
-        pass
-
-    # expr_infix4
-    def visitMod(self, ctx: WdlParser.ModContext):
-        """
-        Modulo (%) expression.
-        """
-        pass
+        lhs = self.visitInfix4(ctx)
+        rhs = self.visitInfix5(ctx)
+        return f'{lhs} {operation} {rhs}'
 
     # expr_core
     # see: https://github.com/w-gao/wdl/blob/main/versions/development/parsers/antlr4/WdlParser.g4#L121
@@ -374,21 +380,18 @@ class WdlTransformer(WdlParserVisitor):
 
         return f'{ctx.Identifier().getText()}({", ".join(self.visitExpr(arg) for arg in ctx.expr())})'
 
-    # expr_core
     def visitArray_literal(self, ctx: WdlParser.Array_literalContext):
         """
         Pattern: LBRACK (expr (COMMA expr)*)* RBRACK
         """
         return f"[{', '.join(self.visitExpr(expr) for expr in ctx.expr())}]"
 
-    # expr_core
     def visitPair_literal(self, ctx: WdlParser.Pair_literalContext):
         """
         Pattern: LPAREN expr COMMA expr RPAREN
         """
         return f"({self.visitExpr(ctx.expr(0))}, {self.visitExpr(ctx.expr(1))})"
 
-    # expr_core
     def visitMap_literal(self, ctx: WdlParser.Map_literalContext):
         """
         Pattern: LBRACE (expr COLON expr (COMMA expr COLON expr)*)* RBRACE
@@ -396,27 +399,25 @@ class WdlTransformer(WdlParserVisitor):
         # return f"{{{', '.join()}}}"
         pass
 
-    # expr_core
     def visitStruct_literal(self, ctx: WdlParser.Struct_literalContext):
         """
         Pattern: Identifier LBRACE (Identifier COLON expr (COMMA Identifier COLON expr)*)* RBRACE
         """
         raise NotImplementedError(f'Structs are not implemented yet :(')
 
-    # expr_core
     def visitIfthenelse(self, ctx: WdlParser.IfthenelseContext):
         """
         Ternary expression.
 
         Pattern: IF expr THEN expr ELSE expr
         """
-        if_ = self.visitExpr(ctx.expr(0))
+        if_true = self.visitExpr(ctx.expr(0))
         condition = self.visitExpr(ctx.expr(1))
-        else_ = self.visitExpr(ctx.expr(2))
+        if_false = self.visitExpr(ctx.expr(2))
 
-        return f'({condition} if {if_} else {else_})'
+        # this should also work without parenthesis
+        return f'({condition} if {if_true} else {if_false})'
 
-    # expr_core
     def visitExpression_group(self, ctx: WdlParser.Expression_groupContext):
         """
         Pattern: LPAREN expr RPAREN

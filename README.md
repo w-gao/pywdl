@@ -15,10 +15,9 @@ Compilation design; expressions are stored as Python code as strings in collecti
   * [ ] Struct
 - Expression
   * [X] LOR, LAND
-  * [ ] ==, !==, <=, >=, <, > **(!!)**
-  * [ ] +, - **(!!)**
-  * [ ] *, /, % **(!!)**
-  * [ ] <=, <, =, >, >= **(!!)**
+  * [ ] ==, !=, <=, >=, <, > **(!!)**
+  * [X] +, -
+  * [X] *, /, %
   * [X] apply (function call)
     - [ ] allow user to hook into this to modify how arguments are parsed. **(!!)**
   * [X] array_literal

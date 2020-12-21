@@ -55,9 +55,9 @@ class WorkflowTests(WdlTests):
             version development
 
             workflow wf_input_1 {
-                input {
-                  String in_str = "Hello"
-                }
+              input {
+                String in_str = "Hello"
+              }
             }
         """)
 
@@ -82,9 +82,9 @@ class WorkflowTests(WdlTests):
             version development
 
             workflow wf_output_1 {
-                output {
-                  String in_str = "Hello"
-                }
+              output {
+                String in_str = "Hello"
+              }
             }
         """)
 
@@ -110,10 +110,10 @@ class WorkflowTests(WdlTests):
             version development
 
             workflow wf_decl_1 {
-                input {
-                  String in_str = "Hello"
-                }
-                Int random_int = 19
+              input {
+                String in_str = "Hello"
+              }
+              Int random_int = 19
             }
         """)
 
@@ -137,7 +137,7 @@ class WorkflowTests(WdlTests):
             
             task t {
               input {
-                String in_str = 'hello'
+                String in_str = "hello"
               }
               
               command {}
@@ -315,7 +315,7 @@ class TaskTests(WdlTests):
 
             task t {
               input {
-                String in_str = 'hello'
+                String in_str = "hello"
               }
 
               command {}
@@ -342,7 +342,7 @@ class TaskTests(WdlTests):
 
             task t {
               input {
-                String in_str = 'hello'
+                String in_str = "hello"
               }
 
               command {}
@@ -376,16 +376,16 @@ class ExprTests(WdlTests):
 
             workflow wf_expr_lor_land_1 {
               input {
-                  Int n0 = 0
-                  Int n5 = 5
-                  Int n10 = 10
-                  Boolean bool_or = n0 || n10
-                  Boolean bool_and = n0 && n10
-                  Boolean bool_or_and_1 = n0 || n10 && n5
-                  Boolean bool_or_and_2 = (n0 || n10) && n5
-                  Boolean bool_and_or_1 = n0 && n10 || n5
-                  Boolean bool_and_or_2 = (n0 && n10) || n5  # no effect
-                  Boolean bool_and_or_3 = n0 && (n10 || n5)
+                Int n0 = 0
+                Int n5 = 5
+                Int n10 = 10
+                Boolean bool_or = n0 || n10
+                Boolean bool_and = n0 && n10
+                Boolean bool_or_and_1 = n0 || n10 && n5
+                Boolean bool_or_and_2 = (n0 || n10) && n5
+                Boolean bool_and_or_1 = n0 && n10 || n5
+                Boolean bool_and_or_2 = (n0 && n10) || n5  # no effect
+                Boolean bool_and_or_3 = n0 && (n10 || n5)
               }
             }
         """)
@@ -440,27 +440,27 @@ class ExprTests(WdlTests):
 
             workflow wf_expr_pair {
               input {
-                Pair[String, Int] in_pair = ('twenty', 20)
+                Pair[String, Int] in_pair = ("twenty", 20)
               }
             }
         """)
 
         wf, _ = parse(InputStream(wf_expr_pair))
-        self.assertEqual(self.get_wf_value(wf, 'wf_expr_pair', 'in_pair'), "('twenty', 20)")
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_pair', 'in_pair'), '("twenty", 20)')
 
         wf_expr_pair_integration = heredoc("""
             version development
 
             workflow wf_expr_pair_integration {
               input {
-                Array[Pair[Int, String]] arr = [ (1, 'I'), (2, 'II'), (3, 'III'), (4, 'IV') ]
+                Array[Pair[Int, String]] arr = [ (1, "I"), (2, "II"), (3, "III"), (4, "IV") ]
               }
             }
         """)
 
         wf, _ = parse(InputStream(wf_expr_pair_integration))
 
-        expected_output = "[(1, 'I'), (2, 'II'), (3, 'III'), (4, 'IV')]"
+        expected_output = '[(1, "I"), (2, "II"), (3, "III"), (4, "IV")]'
         self.assertEqual(self.get_wf_value(wf, 'wf_expr_pair_integration', 'arr'), expected_output)
 
     def test_expr_ternary(self):
@@ -483,7 +483,8 @@ class ExprTests(WdlTests):
 
         wf, _ = parse(InputStream(wf_expr_ternary))
         self.assertEqual(self.get_wf_value(wf, 'wf_expr_ternary', 'time'), '("morning" if morning else "afternoon")')
-        # self.assertEqual(self.get_wf_value(wf, 'wf_expr_ternary', 'greeting'), '')
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_ternary', 'greeting'),
+                         second='"good " + ("morning" if morning else "afternoon")')
 
     def test_expr_comparisons(self):
         """
@@ -508,77 +509,57 @@ class ExprTests(WdlTests):
             version development
 
             workflow wf_expr_arithmetic {
-            
+              Int add_1 = 3 + 4
+              Int sub_1 = 5 - 3
+              Int sub_2 = 5 - add_1
+              Int mul_1 = 3 * 5
+              # Int div_1 = 5 / 3  # todo: this should be int division
+              Float div_2 = 5.5 / 3
+              Int mod_1 = 11 % 3
+              
+              Int comp_1 = (if false then 3 else 5 + 7) * 10
             }
         """)
 
         wf, _ = parse(InputStream(wf_expr_arithmetic))
-        self.assertEqual(True, True)
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_arithmetic', 'add_1'), '3 + 4')  # 7
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_arithmetic', 'sub_1'), '5 - 3')  # 2
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_arithmetic', 'sub_2'), '5 - add_1')  # -2
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_arithmetic', 'mul_1'), '3 * 5')  # 15
+        # self.assertEqual(self.get_wf_value(wf, 'wf_expr_arithmetic', 'div_1'), '5 // 3')  # 1
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_arithmetic', 'div_2'), '5.5 / 3')  # 1.8333333333333333,
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_arithmetic', 'mod_1'), '11 % 3')  # 2
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_arithmetic', 'comp_1'),
+                         # additional is before ternary, correct.
+                         second='((3 if false else 5 + 7)) * 10')  # 75
 
     def test_expr_primitives(self):
         """
         Test primitives in expressions.
         """
-        wf_expr_primitives_1 = heredoc("""
+        wf_expr_primitives = heredoc("""
             version development
 
-            workflow wf_expr_primitives_1 {
+            workflow wf_expr_primitives {
               Int num = 10
-              String text = 'hello'
+              String text = "hello"
               Float real = 2.7
               Boolean bool = false
-              File file = 'test.json'
+              File file = "test.json"
               
               String none = None
               String var = text
             }
         """)
 
-        wf, _ = parse(InputStream(wf_expr_primitives_1))
-        print(wf)
-        expected_wf = {
-            'wf_expr_primitives_1': {
-                'wf_declarations': {
-                    'num': {
-                        'name': 'num',
-                        'type': WDLIntType(),
-                        'value': '10'
-                    },
-                    'text': {
-                        'name': 'text',
-                        'type': WDLStringType(),
-                        'value': "'hello'"
-                    },
-                    'real': {
-                        'name': 'real',
-                        'type': WDLFloatType(),
-                        'value': '2.7'
-                    },
-                    'bool': {
-                        'name': 'bool',
-                        'type': WDLBooleanType(),
-                        'value': 'False'
-                    },
-                    'file': {
-                        'name': 'file',
-                        'type': WDLFileType(),
-                        'value': "'test.json'"
-                    },
-                    'none': {
-                        'name': 'none',
-                        'type': WDLStringType(),
-                        'value': 'None'
-                    },
-                    'var': {
-                        'name': 'var',
-                        'type': WDLStringType(),
-                        'value': 'text'  # variable name without quotes, correct.
-                    }
-                }
-            }
-        }
-
-        self.assertEqual(wf, expected_wf)
+        wf, _ = parse(InputStream(wf_expr_primitives))
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_primitives', 'num'), '10')
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_primitives', 'text'), '"hello"')
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_primitives', 'real'), '2.7')
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_primitives', 'bool'), 'False')
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_primitives', 'file'), '"test.json"')
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_primitives', 'none'), 'None')
+        self.assertEqual(self.get_wf_value(wf, 'wf_expr_primitives', 'var'), 'text')  # var without quotes, correct.
 
 
 class StressTests(WdlTests):
