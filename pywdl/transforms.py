@@ -55,16 +55,23 @@ class WdlTransformer(WdlParserVisitor):
         Contains one of the following: 'import_doc', 'struct', 'workflow', or 'task'.
         """
         element = ctx.children[0]
+
+        # workflow
         if isinstance(element, WdlParser.WorkflowContext):
             return self.visitWorkflow(element)
+        # task
         elif isinstance(element, WdlParser.TaskContext):
             return self.visitTask(element)
+        # struct
         elif isinstance(element, WdlParser.StructContext):
             # TODO: add support for structs.
             raise NotImplementedError('Struct is not supported.')
+        # import_doc
         elif isinstance(element, WdlParser.Import_docContext):
             # TODO: add support for imports.
             raise NotImplementedError('Import other WDL files is not supported.')
+        else:
+            raise RuntimeError(f'Unrecognized document element in visitDocument(): {type(element)}')
 
     # Workflow section
 
@@ -79,22 +86,25 @@ class WdlTransformer(WdlParserVisitor):
         for element in ctx.workflow_element():
             section = element.children[0]
 
-            # inputs
+            # input
             if isinstance(section, WdlParser.Workflow_inputContext):
                 wf.setdefault('wf_declarations', {}).update(self.visitWorkflow_input(section))
-
-            # non-input declarations, scatters, calls, and conditionals
+            # output
+            elif isinstance(section, WdlParser.Workflow_outputContext):
+                wf['wf_outputs'] = self.visitWorkflow_output(section)
+            # inner_element (i.e.: non-input declarations, scatters, calls, and conditionals)
             elif isinstance(section, WdlParser.Inner_workflow_elementContext):
                 wf_key, contents = self.visitInner_workflow_element(section)
                 wf.setdefault(wf_key, {}).update(contents)
+            # parameter_meta
+            elif isinstance(section, WdlParser.Parameter_meta_elementContext):
+                print('[Warning] `parameter_meta` is not supported.')
+            # meta
+            elif isinstance(section, WdlParser.Meta_elementContext):
+                print('[Warning] `meta` is not supported.')
 
-            # outputs
-            elif isinstance(section, WdlParser.Workflow_outputContext):
-                wf['wf_outputs'] = self.visitWorkflow_output(section)
-
-            # O.o
             else:
-                raise RuntimeError(f'Unsupported workflow element in visitWorkflow(): {type(section)}')
+                raise RuntimeError(f'Unrecognized workflow element in visitWorkflow(): {type(section)}')
 
     def visitWorkflow_input(self, ctx: WdlParser.Workflow_inputContext):
         """
@@ -144,7 +154,7 @@ class WdlTransformer(WdlParserVisitor):
         elif isinstance(element, WdlParser.ConditionalContext):
             return self.visitConditional(element)
         else:
-            raise RuntimeError(f'Unsupported workflow element in visitInner_workflow_element(): {type(element)}')
+            raise RuntimeError(f'Unrecognized workflow element in visitInner_workflow_element(): {type(element)}')
 
     def visitCall(self, ctx: WdlParser.CallContext):
         """
@@ -218,10 +228,43 @@ class WdlTransformer(WdlParserVisitor):
     # Task section
 
     def visitTask(self, ctx: WdlParser.TaskContext):
-        print('visitTask')
-        # return super().visitChildren(ctx)
+        """
+        Root of a task definition. Contains an `identifier` and an array of
+        `task_element`s.
+        """
+        identifier = ctx.Identifier().getText()
+        task = self.tasks_dictionary.setdefault(identifier, OrderedDict())
+        print(f'Visiting task: {identifier}')
 
-    #
+        for element in ctx.task_element():
+            section = element.children[0]
+
+            # input
+            if isinstance(section, WdlParser.Task_inputContext):
+                print('task input')
+            # output
+            elif isinstance(section, WdlParser.Task_outputContext):
+                print('task output')
+            # command
+            elif isinstance(section, WdlParser.Task_commandContext):
+                print('task command')
+            # runtime
+            elif isinstance(section, WdlParser.Task_runtimeContext):
+                print('task runtime')
+            # hints
+            elif isinstance(section, WdlParser.Task_hintsContext):
+                print('[Warning] `hints` is not supported.')
+            # bound_decls
+            elif isinstance(section, WdlParser.Bound_declsContext):
+                print('task bound_decls')
+            # parameter_meta
+            elif isinstance(section, WdlParser.Parameter_meta_elementContext):
+                print('[Warning] `parameter_meta` is not supported.')
+            # meta
+            elif isinstance(section, WdlParser.Meta_elementContext):
+                print('[Warning] `meta` is not supported.')
+            else:
+                raise RuntimeError(f'Unrecognized workflow element in visitWorkflow(): {type(section)}')
 
     # Shared
 
