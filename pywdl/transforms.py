@@ -267,7 +267,7 @@ class WdlTransformer(WdlParserVisitor):
                 task['outputs'] = self.visitTask_output(section)
             # command
             elif isinstance(section, WdlParser.Task_commandContext):
-                print('task command')
+                task['raw_commandline'] = self.visitTask_command(section)
             # runtime
             elif isinstance(section, WdlParser.Task_runtimeContext):
                 print('task runtime')
@@ -319,6 +319,62 @@ class WdlTransformer(WdlParserVisitor):
             name, decl = self.visitBound_decls(decl)
             inputs.append(tuple(decl.values()))
         return inputs
+
+    def visitTask_command(self, ctx: WdlParser.Task_commandContext):
+        """
+        Parses the command section of the WDL task.
+        Contains a `string_part` plus any number of `expr_with_string`s.
+
+        The following example command:
+            'echo ${var1} ${var2} > output_file.txt'
+        Has 3 parts:
+                string_part: 'echo '
+                expr_with_string, which has two parts:
+                        expr_part: 'var1'
+                        string_part: ' '
+                expr_with_string, which has two parts:
+                        expr_part: 'var2'
+                        string_part: ' > output_file.txt'
+
+        :return: A list=[] of strings representing the parts of the command:
+            e.g. [string_part, expr_part, string_part, ...]
+        """
+        parts = []
+
+        # add the first part
+        str_part = self.visitTask_command_string_part(ctx.task_command_string_part())
+        if str_part:
+            parts.append(f"r'''{str_part}'''")
+
+        for group in ctx.task_command_expr_with_string():
+            expr_part, str_part = self.visitTask_command_expr_with_string(group)
+            parts.append(expr_part)
+            if str_part:
+                parts.append(f"r'''{str_part}'''")
+
+        return parts
+
+    def visitTask_command_string_part(self, ctx: WdlParser.Task_command_string_partContext):
+        """
+        Returns a string representing the string_part.
+        """
+        # join here because a string that contains $, {, or } is split
+        return ''.join(part.getText() for part in ctx.CommandStringPart())
+
+    def visitTask_command_expr_with_string(self, ctx: WdlParser.Task_command_expr_with_stringContext):
+        """
+        Returns a tuple=(`expr_part`, `string_part`).
+        """
+        return (self.visitTask_command_expr_part(ctx.task_command_expr_part()),
+                self.visitTask_command_string_part(ctx.task_command_string_part()))
+
+    def visitTask_command_expr_part(self, ctx: WdlParser.Task_command_expr_partContext):
+        """
+        Contains an expression inside ~{expr}.
+
+        Returns the expression.
+        """
+        return self.visitExpr(ctx.expr())
 
     # Shared
 

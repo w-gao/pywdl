@@ -76,9 +76,10 @@ task t3 {
 }
 
 task t4 {
-  String str = "hello"
+  String var1 = "hello"
+  String var2 = "hello"
   Float num = 1.9
   command {
-    echo "~{round(num)} test~{ceil(num)}~{floor(num)} ~{str}test"
+    echo ~{var1} ~{var2} > output_file.txt
   }
 }

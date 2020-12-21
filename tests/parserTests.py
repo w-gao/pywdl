@@ -297,6 +297,10 @@ class TaskTests(WdlTests):
     Unit tests related to the task section.
     """
 
+    @staticmethod
+    def get_task_command(task, task_name):
+        return task.get(task_name).get('raw_commandline')
+
     # input
     # output
 
@@ -307,25 +311,76 @@ class TaskTests(WdlTests):
         task_command_1 = heredoc("""
             version development
 
-            workflow task_command_1 {
+            workflow task_command_1 {}
+
+            task t1 {  # no command
+              command {}
             }
 
-            task t {
-              input {
-                String in_str = "hello"
-              }
+            task t2 {  # no string_part, doesn't make sense but worth to test.
+              Int num = 19
+              command {~{num}}
+            }
 
-              command {}
+            task t3 {  # standard command
+              Int num = 19
+              command {
+                echo "~{num}" > output.txt
+              }
+            }
+
+            task t4 {  # multi-line command
+              Float num = 19.6
+              command {
+                echo "~{num}" > output.txt
+                echo "~{ceil(num)}" > output.txt
+              }
+            }
+
+            task t5 {  # multiple expressions in command
+              Float num = 19.6
+              command {
+                echo "Int: ~{num}, ~{ceil(num)}" > output.txt
+              }
+            }
+
+            task t6 {  # command with special characters
+              Float num = 19.6
+              command {
+                echo "$$$~{num}, ~~{ceil(num)}" > output.txt
+              }
             }
         """)
 
-        wf, _ = parse(InputStream(task_command_1))
-
-        expected_wf = {
-            'task_command_1': {
-            }
-        }
-        self.assertEqual(wf, expected_wf)
+        _, task = parse(InputStream(task_command_1))
+        self.assertEqual(self.get_task_command(task, 't1'), [])
+        self.assertEqual(self.get_task_command(task, 't2'), ['num'])
+        self.assertEqual(self.get_task_command(task, 't3'), [
+            'r\'\'\'\n    echo "\'\'\'',
+            'num',
+            'r\'\'\'" > output.txt\n  \'\'\''
+        ])
+        self.assertEqual(self.get_task_command(task, 't4'), [
+            'r\'\'\'\n    echo "\'\'\'',
+            'num',
+            'r\'\'\'" > output.txt\n    echo "\'\'\'',
+            'ceil(num)',
+            'r\'\'\'" > output.txt\n  \'\'\''
+        ])
+        self.assertEqual(self.get_task_command(task, 't5'), [
+            'r\'\'\'\n    echo "Int: \'\'\'',
+            'num',
+            "r''', '''",
+            'ceil(num)',
+            'r\'\'\'" > output.txt\n  \'\'\''
+        ])
+        self.assertEqual(self.get_task_command(task, 't6'), [
+            'r\'\'\'\n    echo "$$$\'\'\'',
+            'num',
+            "r''', ~'''",
+            'ceil(num)',
+            'r\'\'\'" > output.txt\n  \'\'\''
+        ])
 
     def test_task_runtime(self):
         """

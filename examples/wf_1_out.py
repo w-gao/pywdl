@@ -1,4 +1,3 @@
-
 # wf_1 output
 
 wf_1_wf_dict = {
@@ -114,9 +113,14 @@ wf_1_tasks_dict = {
                 'String',
                 '"yes"'
             )
+        ],
+        'raw_commandline': [
+            "r'''\n  '''"
         ]
     },
     't2': {
+        'raw_commandline': [
+        ],
         'outputs': [
             (
                 'num',
@@ -126,13 +130,21 @@ wf_1_tasks_dict = {
         ]
     },
     't3': {
+        'raw_commandline': [
+            'r\'\'\'\n    echo "line 1"\n    echo "line 2"\n    echo "line 3"\n  \'\'\''
+        ],
         'outputs': [
         ]
     },
     't4': {
         'inputs': [
             (
-                'str',
+                'var1',
+                'String',
+                '"hello"'
+            ),
+            (
+                'var2',
                 'String',
                 '"hello"'
             ),
@@ -141,6 +153,13 @@ wf_1_tasks_dict = {
                 'Float',
                 '1.9'
             )
+        ],
+        'raw_commandline': [
+            "r'''\n    echo '''",
+            'var1',
+            "r''' '''",
+            'var2',
+            "r''' > output_file.txt\n  '''"
         ]
     }
 }

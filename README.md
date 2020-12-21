@@ -4,14 +4,14 @@
 
 - Top priority denoted as "**(!!)**".
 
-#### WDL -> Python objects Transforms
+#### WDL -> Python objects Transformation
 
 Compilation design; expressions are stored as Python code as strings in collections.
 
 - Types
   * [X] Primitives (String, Int, Float, Boolean, File)
     - [ ] Directory
-    - [ ] allow user to hook into this to modify how arguments are parsed. **(!!)**
+    - [ ] allow user to hook into this to modify how types are parsed. **(!!)**
   * [X] Compound (Array, Pair, Map)
   * [ ] Struct
 - Expression
@@ -20,7 +20,7 @@ Compilation design; expressions are stored as Python code as strings in collecti
   * [X] +, -
   * [X] *, /, %
   * [X] apply (function call)
-    - [X] allow user to hook into this to modify how arguments are parsed. **(!!)**
+    - [X] allow user to hook into this to modify how arguments are parsed.
   * [X] array_literal
   * [X] pair_literal
   * [ ] map_literal
@@ -49,7 +49,7 @@ Compilation design; expressions are stored as Python code as strings in collecti
 - Task
   * [X] input
   * [X] output
-  * [ ] command **(!!)**
+  * [X] command
   * [ ] runtime **(!!)**
   * [ ] hints
   * [X] bound_decls (non-input declarations)
