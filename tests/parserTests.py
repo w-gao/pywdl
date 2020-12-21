@@ -569,8 +569,10 @@ class StressTests(WdlTests):
     def test_stress_1(self):
         import time
         start = time.time()
-        wf, _ = parse(FileStream('stress_test.wdl', 'utf-8'))
+        wf, _ = parse(FileStream('tests/stress_test.wdl', 'utf-8'))
+        print(wf)
         end = time.time() - start
+        print(end)
         self.assertLessEqual(end, 2, f'Too long to run: ({end}s).')
 
 
