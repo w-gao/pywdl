@@ -32,9 +32,6 @@ def parse(stream):
     visitor = WdlTransformer()
     visitor.visit(tree)
 
-    from scripts.formatter import write_mappings
-    write_mappings(visitor)
-
     return visitor.workflows_dictionary, visitor.tasks_dictionary
 
 
