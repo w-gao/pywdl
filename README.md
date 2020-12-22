@@ -1,5 +1,7 @@
 # pywdl
 
+A playground repository for implementing WDL in Python.
+
 ## Checklist
 
 - Top priority denoted as "**(!!)**".

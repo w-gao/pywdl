@@ -1,5 +1,4 @@
-from collections import OrderedDict  # TODO: switch to dict.
-# from builtins import dict as OrderedDict
+from collections import OrderedDict
 
 from pywdl.antlr.WdlParser import WdlParser
 from pywdl.antlr.WdlParserVisitor import WdlParserVisitor
